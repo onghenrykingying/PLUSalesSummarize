@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLU Sales Summarizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
+      background: #f2f6f5;
+      color: #544B3D;
+      min-height: 100vh;
+    }
+
+    /* ===================== TOP BAR ===================== */
+    .top-bar {
+      background: linear-gradient(135deg, #544B3D 0%, #4E6E58 60%, #4C8577 100%);
+      color: white;
+      padding: 0 32px;
+      display: flex;
+      align-items: stretch;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 0;
+      margin-right: 32px;
+      white-space: nowrap;
+    }
+    .brand-icon { font-size: 1.4rem; }
+    .brand-text { font-size: 1rem; font-weight: 700; letter-spacing: 0.3px; }
+
+    /* step tabs */
+    .nav-tabs {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 26px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: none;
+      position: relative;
+    }
+    .nav-tab:hover { background: rgba(255,255,255,0.08); }
+    .nav-tab.active {
+      border-bottom-color: #7ADFBB;
+      background: rgba(255,255,255,0.10);
+    }
+    .tab-badge {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700;
+      transition: background 0.15s;
+    }
+    .nav-tab.active .tab-badge {
+      background: #7ADFBB;
+      color: #544B3D;
+      font-weight: 800;
+    }
+    .tab-label { font-size: 0.88rem; }
+    .tab-label strong { display: block; font-weight: 700; font-size: 0.9rem; }
+    .tab-label span   { display: block; font-size: 0.74rem; opacity: 0.7; }
+
+    /* ===================== PAGES ===================== */
+    .page { display: none; max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+    .page.active { display: block; }
+
+    /* page title */
+    .page-title {
+      margin-bottom: 22px;
+    }
+    .page-title h2 { font-size: 1.25rem; color: #544B3D; font-weight: 700; }
+    .page-title p  { font-size: 0.84rem; color: #64748b; margin-top: 4px; }
+
+    /* ===================== UPLOAD ZONE ===================== */
+    .upload-zone {
+      border: 2.5px dashed #94a3b8;
+      border-radius: 14px;
+      background: white;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .upload-zone.drag-over { border-color: #4C8577; background: #e8f8f4; }
+    .upload-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone h3 { font-size: 1.05rem; color: #334155; margin-bottom: 6px; }
+    .upload-zone p  { font-size: 0.83rem; color: #64748b; }
+
+    /* ===================== FILE TAGS ===================== */
+    .file-list { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .file-tag {
+      background: #d4f5ee; color: #4E6E58;
+      border: 1px solid #7ADFBB; border-radius: 20px;
+      padding: 4px 12px; font-size: 0.8rem;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .file-tag .remove-btn {
+      cursor: pointer; font-weight: bold; color: #4C8577;
+      background: none; border: none; font-size: 1rem; line-height: 1;
+    }
+
+    /* ===================== BUTTONS ===================== */
+    .controls { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      padding: 10px 22px; border: none; border-radius: 8px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn-primary { background: #4C8577; color: white; }
+    .btn-success { background: #4C8577; color: white; }
+    .btn-danger  { background: #dc2626; color: white; }
+    .btn-primary:hover:not(:disabled) { opacity: 0.87; }
+    .btn-success:hover:not(:disabled) { opacity: 0.87; }
+    .btn-danger:hover:not(:disabled)  { opacity: 0.87; }
+
+    /* ===================== STATS ===================== */
+    .stats { display: none; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+    .stat-card {
+      background: white; border-radius: 10px; padding: 14px 18px;
+      flex: 1; min-width: 150px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border-left: 4px solid #4C8577;
+    }
+    .stat-card.green  { border-left-color: #4C8577; }
+    .stat-card.orange { border-left-color: #4E6E58; }
+    .stat-card label { font-size: 0.73rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card span  { display: block; font-size: 1.35rem; font-weight: 700; color: #544B3D; margin-top: 4px; }
+
+    /* ===================== SEARCH ===================== */
+    .search-bar { display: none; margin-top: 18px; }
+    .search-bar input {
+      width: 100%; max-width: 420px;
+      padding: 9px 14px; border: 1.5px solid #cbd5e1;
+      border-radius: 8px; font-size: 0.9rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-bar input:focus { border-color: #4C8577; }
+
+    /* ===================== TABLE ===================== */
+    .table-wrap {
+      margin-top: 18px; background: white;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      display: none;
+    }
+    .table-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 13px 18px; background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .table-header h3 { font-size: 0.93rem; color: #334155; }
+    .row-count { font-size: 0.79rem; color: #64748b; }
+
+    .table-scroll { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    thead th {
+      position: sticky; top: 0; background: #544B3D; color: white;
+      padding: 11px 16px; text-align: left; font-weight: 600;
+      cursor: pointer; user-select: none; white-space: nowrap;
+    }
+    thead th:hover { background: #4C8577; }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.55; }
+    thead th.sorted .sort-icon { opacity: 1; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 9px 16px; }
+    tbody td:first-child { font-family: monospace; font-size: 0.82rem; color: #475569; }
+    tbody td:nth-child(3), tbody td:nth-child(4) { text-align: right; }
+    tbody td:nth-child(4) { color: #4C8577; font-weight: 600; }
+    tfoot tr { background: #eef9f6; border-top: 2px solid #4C8577; }
+    tfoot td { padding: 10px 16px; font-weight: 700; }
+    tfoot td:nth-child(3), tfoot td:nth-child(4) { text-align: right; color: #4C8577; }
+
+    /* ===================== PROGRESS ===================== */
+    .progress-wrap {
+      display: none; margin-top: 14px; background: white;
+      border-radius: 10px; padding: 15px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .progress-label { font-size: 0.84rem; color: #475569; margin-bottom: 8px; }
+    .progress-bar-outer { background: #e2e8f0; border-radius: 99px; height: 8px; overflow: hidden; }
+    .progress-bar-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #4E6E58, #7ADFBB);
+      border-radius: 99px; width: 0%; transition: width 0.2s;
+    }
+
+    /* ===================== DATE RANGE ===================== */
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+    .date-range label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .date-range input[type=date] {
+      padding: 7px 11px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 0.88rem;
+      color: #544B3D;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #f8fafc;
+    }
+    .date-range input[type=date]:focus { border-color: #4C8577; background: white; }
+    .date-range .sep {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .date-range-hint {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      margin-left: auto;
+    }
+
+    /* ===================== STEP 3 TWO-PANEL UPLOAD ===================== */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 768px) { .upload-grid { grid-template-columns: 1fr; } }
+
+    .upload-panel {
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .upload-panel h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #544B3D;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .upload-panel .upload-zone {
+      padding: 28px 16px;
+    }
+    .upload-panel .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+    .upload-panel .upload-zone h3 { font-size: 0.9rem; }
+    .upload-panel .upload-zone p  { font-size: 0.78rem; }
+
+    /* step3 preview tabs */
+    .preview-tabs {
+      display: none;
+      margin-top: 18px;
+    }
+    .preview-tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 0;
+    }
+    .preview-tab-btn {
+      padding: 9px 20px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      user-select: none;
+      transition: color 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+    .preview-tab-btn.active { color: #4C8577; border-bottom-color: #4C8577; }
+    .preview-tab-btn:hover:not(.active) { color: #334155; }
+
+    .preview-pane { display: none; }
+    .preview-pane.active { display: block; }
+
+    /* wider table for step3 */
+    #page3 thead th { font-size: 0.78rem; padding: 9px 11px; }
+    #page3 tbody td { padding: 7px 11px; font-size: 0.82rem; }
+    #page3 tfoot td { padding: 8px 11px; }
+    .profit-pos { color: #3a7a6a; font-weight: 600; }
+    .profit-neg { color: #dc2626; font-weight: 600; }
+    .abc-badge { display:inline-block; padding:1px 7px; border-radius:4px; font-size:0.78rem; font-weight:700; letter-spacing:.03em; }
+    .abc-a { background:#d1fae5; color:#065f46; }
+    .abc-b { background:#fef3c7; color:#92400e; }
+    .abc-c { background:#f1f5f9; color:#475569; }
+
+    /* ===================== STEP 4 PDF REPORT ===================== */
+    .report-status-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1.5px solid;
+    }
+    .report-status-card.ready   { background: #eef9f4; border-color: #7ADFBB; }
+    .report-status-card.missing { background: #fef9ec; border-color: #d4a017; }
+    .report-status-card .status-icon { font-size: 1.8rem; }
+    .report-status-card .status-text strong { display: block; font-size: 0.92rem; color: #544B3D; }
+    .report-status-card .status-text span   { font-size: 0.8rem; color: #64748b; }
+
+    .report-contents {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .report-content-card {
+      background: white;
+      border-radius: 10px;
+      padding: 14px 16px;
+      border-left: 4px solid #4C8577;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .report-content-card h5 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #544B3D;
+      margin-bottom: 4px;
+    }
+    .report-content-card p {
+      font-size: 0.76rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .report-content-card.alt { border-left-color: #4E6E58; }
+    .report-content-card.alt2 { border-left-color: #7ADFBB; }
+
+    #pdf-generating {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      background: white;
+      border-radius: 10px;
+      padding: 14px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 3px solid #A6ECE0;
+      border-top-color: #4C8577;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===================== ERROR ===================== */
+    .error-box {
+      display: none; margin-top: 10px;
+      background: #fef2f2; border: 1px solid #fecaca;
+      color: #991b1b; border-radius: 8px;
+      padding: 10px 15px; font-size: 0.84rem; white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== TOP NAVIGATION ==================== -->
+<div class="top-bar">
+  <div class="brand">
+    <span class="brand-text">PLU Sales Summarizer</span>
+  </div>
+  <nav class="nav-tabs">
+    <div class="nav-tab active" data-page="page1">
+      <div class="tab-badge">1</div>
+      <div class="tab-label">
+        <strong>Weekly Summary</strong>
+        <span>Raw sales → Weekly data</span>
+      </div>
+    </div>
+    <div class="nav-tab" data-page="page2">
+      <div class="tab-badge">2</div>
+      <div class="tab-label">
+        <strong>Monthly Summary</strong>
+        <span>Weekly data → Monthly data</span>
+      </div>
+    </div>
+    <div class="nav-tab" data-page="page3">
+      <div class="tab-badge">3</div>
+      <div class="tab-label">
+        <strong>Profit Analysis</strong>
+        <span>Monthly data + SKU list → P&amp;L</span>
+      </div>
+    </div>
+    <div class="nav-tab" data-page="page4">
+      <div class="tab-badge">4</div>
+      <div class="tab-label">
+        <strong>PDF Report</strong>
+        <span>Generate insights report</span>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<!-- ==================== PAGE 1 : WEEKLY SUMMARY ==================== -->
+<div class="page active" id="page1">
+
+  <div class="page-title">
+    <h2>Step 1 — Weekly Summary</h2>
+    <p>Upload your raw daily/weekly sales Excel reports. All files will be aggregated into one consolidated SKU summary.</p>
+  </div>
+
+  <div class="upload-zone" id="drop1">
+    <input type="file" id="file-input1" accept=".xls,.xlsx" multiple />
+    <div class="upload-icon">📂</div>
+    <h3>Drop Excel files here, or click to browse</h3>
+    <p>Supports .xls and .xlsx &nbsp;|&nbsp; Multiple files allowed</p>
+  </div>
+
+  <div class="date-range">
+    <label>📅 Date Range</label>
+    <label for="date-from1">From</label>
+    <input type="date" id="date-from1" />
+    <span class="sep">→</span>
+    <label for="date-to1">To</label>
+    <input type="date" id="date-to1" />
+    <span class="date-range-hint">Used in exported file name</span>
+  </div>
+
+  <div class="file-list" id="file-list1"></div>
+  <div class="error-box" id="error1"></div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-process1" disabled>⚡ Process &amp; Summarize</button>
+    <button class="btn btn-success" id="btn-export1"  disabled>⬇ Export to Excel</button>
+    <button class="btn btn-danger"  id="btn-clear1"   disabled>✕ Clear All</button>
+  </div>
+
+  <div class="progress-wrap" id="progress1">
+    <div class="progress-label" id="progress-lbl1">Processing…</div>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar1"></div></div>
+  </div>
+
+  <div class="stats" id="stats1">
+    <div class="stat-card"><label>Files Processed</label><span id="s1-files">0</span></div>
+    <div class="stat-card"><label>Unique SKUs</label><span id="s1-skus">0</span></div>
+    <div class="stat-card green"><label>Total Qty Sold</label><span id="s1-qty">0</span></div>
+    <div class="stat-card orange"><label>Total Amount</label><span id="s1-amt">0.00</span></div>
+  </div>
+
+  <div class="search-bar" id="search1">
+    <input type="text" id="search-input1" placeholder="🔍  Search by PLU Code or Description…" />
+  </div>
+
+  <div class="table-wrap" id="table-wrap1">
+    <div class="table-header">
+      <h3>Weekly PLU Sales Summary</h3>
+      <span class="row-count" id="row-count1"></span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-page="1" data-col="plu"  class="sorted">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="1" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="1" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="1" data-col="amt">Total Amount <span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody1"></tbody>
+        <tfoot id="tfoot1"></tfoot>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page1 -->
+
+<!-- ==================== PAGE 2 : MONTHLY SUMMARY ==================== -->
+<div class="page" id="page2">
+
+  <div class="page-title">
+    <h2>Step 2 — Monthly Summary</h2>
+    <p>Upload your weekly summary Excel files (exported from Step 1). All weeks will be combined into one monthly SKU summary.</p>
+  </div>
+
+  <div class="upload-zone" id="drop2">
+    <input type="file" id="file-input2" accept=".xls,.xlsx" multiple />
+    <div class="upload-icon">📅</div>
+    <h3>Drop weekly summary files here, or click to browse</h3>
+    <p>Supports .xls and .xlsx &nbsp;|&nbsp; Multiple files allowed</p>
+  </div>
+
+  <div class="date-range">
+    <label>📅 Date Range</label>
+    <label for="date-from2">From</label>
+    <input type="date" id="date-from2" />
+    <span class="sep">→</span>
+    <label for="date-to2">To</label>
+    <input type="date" id="date-to2" />
+    <span class="date-range-hint">Used in exported file name</span>
+  </div>
+
+  <div class="file-list" id="file-list2"></div>
+  <div class="error-box" id="error2"></div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-process2" disabled>⚡ Process &amp; Summarize</button>
+    <button class="btn btn-success" id="btn-export2"  disabled>⬇ Export to Excel</button>
+    <button class="btn btn-danger"  id="btn-clear2"   disabled>✕ Clear All</button>
+  </div>
+
+  <div class="progress-wrap" id="progress2">
+    <div class="progress-label" id="progress-lbl2">Processing…</div>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar2"></div></div>
+  </div>
+
+  <div class="stats" id="stats2">
+    <div class="stat-card"><label>Files Processed</label><span id="s2-files">0</span></div>
+    <div class="stat-card"><label>Unique SKUs</label><span id="s2-skus">0</span></div>
+    <div class="stat-card green"><label>Total Qty Sold</label><span id="s2-qty">0</span></div>
+    <div class="stat-card orange"><label>Total Amount</label><span id="s2-amt">0.00</span></div>
+  </div>
+
+  <div class="search-bar" id="search2">
+    <input type="text" id="search-input2" placeholder="🔍  Search by PLU Code or Description…" />
+  </div>
+
+  <div class="table-wrap" id="table-wrap2">
+    <div class="table-header">
+      <h3>Monthly PLU Sales Summary</h3>
+      <span class="row-count" id="row-count2"></span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-page="2" data-col="plu"  class="sorted">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="2" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="2" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="2" data-col="amt">Total Amount <span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody2"></tbody>
+        <tfoot id="tfoot2"></tfoot>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page2 -->
+
+<!-- ==================== PAGE 3 : PROFIT ANALYSIS ==================== -->
+<div class="page" id="page3">
+
+  <div class="page-title">
+    <h2>Step 3 — Profit Analysis</h2>
+    <p>Upload the SKU master list and a monthly summary (from Step 2) to generate a full P&amp;L breakdown per SKU.</p>
+  </div>
+
+  <!-- Two upload panels side by side -->
+  <div class="upload-grid">
+
+    <!-- Panel A: SKU List -->
+    <div class="upload-panel">
+      <h4>📋 SKU Master List <span style="font-weight:400;color:#64748b;font-size:0.78rem;">.csv or .xlsx</span></h4>
+      <div class="upload-zone" id="drop3a">
+        <input type="file" id="file-input3a" accept=".csv,.xls,.xlsx" />
+        <div class="upload-icon">🗂</div>
+        <h3>Drop SKU list here</h3>
+        <p>.csv or .xlsx — one file</p>
+      </div>
+      <div class="file-list" id="file-list3a"></div>
+    </div>
+
+    <!-- Panel B: Monthly Summary -->
+    <div class="upload-panel">
+      <h4>📊 Monthly Summary <span style="font-weight:400;color:#64748b;font-size:0.78rem;">from Step 2</span></h4>
+      <div class="upload-zone" id="drop3b">
+        <input type="file" id="file-input3b" accept=".xls,.xlsx" />
+        <div class="upload-icon">📅</div>
+        <h3>Drop monthly summary here</h3>
+        <p>.xls or .xlsx — one file</p>
+      </div>
+      <div class="file-list" id="file-list3b"></div>
+    </div>
+
+  </div><!-- /upload-grid -->
+
+  <!-- Date range -->
+  <div class="date-range">
+    <label>📅 Date Range</label>
+    <label for="date-from3">From</label>
+    <input type="date" id="date-from3" />
+    <span class="sep">→</span>
+    <label for="date-to3">To</label>
+    <input type="date" id="date-to3" />
+    <span class="date-range-hint">Used in exported file name</span>
+  </div>
+
+  <div class="error-box" id="error3"></div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-process3" disabled>⚡ Generate P&amp;L Report</button>
+    <button class="btn btn-success" id="btn-export3"  disabled>⬇ Export to Excel</button>
+    <button class="btn btn-danger"  id="btn-clear3"   >✕ Clear All</button>
+  </div>
+
+  <div class="progress-wrap" id="progress3">
+    <div class="progress-label" id="progress-lbl3">Processing…</div>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar3"></div></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats3">
+    <div class="stat-card"><label>Matched SKUs</label><span id="s3-matched">0</span></div>
+    <div class="stat-card"><label>Unmatched SKUs</label><span id="s3-unmatched">0</span></div>
+    <div class="stat-card green"><label>Total Revenue</label><span id="s3-revenue">0.00</span></div>
+    <div class="stat-card"><label>Total COGS</label><span id="s3-cogs">0.00</span></div>
+    <div class="stat-card orange"><label>Total Profit</label><span id="s3-profit">0.00</span></div>
+  </div>
+
+  <!-- Preview tables with two tabs -->
+  <div class="preview-tabs" id="preview-tabs3">
+    <div class="preview-tab-bar">
+      <button class="preview-tab-btn active" data-pane="pane3-sales">Sales &amp; COGS</button>
+      <button class="preview-tab-btn"        data-pane="pane3-profit">Non-Moving SKUs</button>
+    </div>
+
+    <!-- Pane 1: Sales & COGS -->
+    <div class="preview-pane active table-wrap" id="pane3-sales" style="display:block;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Sales &amp; COGS</h3>
+        <span class="row-count" id="row-count3a"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="3a" data-col="plu">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="3a" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="amt">Total Amount <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="cogs">COGS <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="profit">Profit <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="margin">Margin % <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="avg_price">Avg Price <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="sales_mix">Sales Mix % <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="profit_contrib">Profit Contrib % <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="abc">ABC <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="whole_code">Whole Code <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
+            <th data-page="3a" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody3a"></tbody>
+          <tfoot id="tfoot3a"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 2: Non-Moving SKUs -->
+    <div class="preview-pane table-wrap" id="pane3-profit" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Non-Moving SKUs</h3>
+        <span class="row-count" id="row-count3b"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="3b" data-col="plu">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="3b" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
+            <th data-page="3b" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody3b"></tbody>
+          <tfoot id="tfoot3b"></tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /preview-tabs3 -->
+
+</div><!-- /page3 -->
+
+<!-- ==================== PAGE 4 : PDF REPORT ==================== -->
+<div class="page" id="page4">
+
+  <div class="page-title">
+    <h2>Step 4 — PDF Performance Report</h2>
+    <p>Generate a comprehensive store performance report with charts, department breakdowns, supplier analysis, and AI-style insights — all from your Step 3 data.</p>
+  </div>
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="drop4" style="margin-bottom:16px;">
+    <input type="file" id="file-input4" accept=".xls,.xlsx" />
+    <div class="upload-icon">📑</div>
+    <h3>Drop your exported P&amp;L report here, or click to browse</h3>
+    <p>Upload the Excel file exported from Step 3 &nbsp;|&nbsp; .xls or .xlsx</p>
+  </div>
+  <div class="file-list" id="file-list4"></div>
+
+  <!-- Date range for the report -->
+  <div class="date-range" style="margin-top:14px;">
+    <label>📅 Report Period</label>
+    <label for="date-from4">From</label>
+    <input type="date" id="date-from4" />
+    <span class="sep">→</span>
+    <label for="date-to4">To</label>
+    <input type="date" id="date-to4" />
+    <span class="date-range-hint">Shown on the PDF cover page</span>
+  </div>
+
+  <div id="report-status-wrap" style="margin-top:16px;"></div>
+
+  <div class="report-contents">
+    <div class="report-content-card">
+      <h5>📊 Executive Summary</h5>
+      <p>Total Revenue, COGS, Gross Profit, Gross Margin % with KPI cards and overview chart</p>
+    </div>
+    <div class="report-content-card alt">
+      <h5>🏬 Department Analysis</h5>
+      <p>Revenue distribution chart, per-department P&amp;L table with margin % by category</p>
+    </div>
+    <div class="report-content-card">
+      <h5>🚚 Supplier Analysis</h5>
+      <p>Top suppliers ranked by revenue with SKU count, COGS and profit contribution</p>
+    </div>
+    <div class="report-content-card alt2">
+      <h5>🏆 Top Performers</h5>
+      <p>Top 10 SKUs by revenue and by profit with horizontal bar chart visualization</p>
+    </div>
+    <div class="report-content-card alt">
+      <h5>⚠️ Items to Review</h5>
+      <p>Bottom 10 profit SKUs and items sold below cost that need immediate attention</p>
+    </div>
+    <div class="report-content-card alt2">
+      <h5>💡 Key Insights</h5>
+      <p>Auto-generated insights and actionable recommendations based on your data</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-gen-pdf">📄 Generate PDF Report</button>
+  </div>
+
+  <div id="pdf-generating">
+    <div class="spinner"></div>
+    <span id="pdf-gen-status" style="font-size:0.87rem;color:#475569;">Preparing report…</span>
+  </div>
+
+  <div class="error-box" id="error4"></div>
+
+</div><!-- /page4 -->
+
+<script>
+// =====================================================================
+//  Per-page state
+// =====================================================================
+const state = {
+  1: { files: [], data: [], sortCol: 'plu', sortAsc: true },
+  2: { files: [], data: [], sortCol: 'plu', sortAsc: true },
+};
+
+// =====================================================================
+//  Tab switching
+// =====================================================================
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.page).classList.add('active');
+  });
+});
+
+// =====================================================================
+//  Init both pages
+// =====================================================================
+[1, 2].forEach(p => initPage(p));
+
+function initPage(p) {
+  const drop      = document.getElementById(`drop${p}`);
+  const fileInput = document.getElementById(`file-input${p}`);
+
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag-over');
+    addFiles(p, [...e.dataTransfer.files]);
+  });
+  fileInput.addEventListener('change', () => {
+    addFiles(p, [...fileInput.files]);
+    fileInput.value = '';
+  });
+
+  document.getElementById(`btn-process${p}`).addEventListener('click', () => processFiles(p));
+  document.getElementById(`btn-export${p}`).addEventListener('click',  () => exportToExcel(p));
+  document.getElementById(`btn-clear${p}`).addEventListener('click',   () => clearAll(p));
+  document.getElementById(`search-input${p}`).addEventListener('input', () => renderTable(p));
+
+  document.querySelectorAll(`thead th[data-page="${p}"]`).forEach(th => {
+    th.addEventListener('click', () => {
+      const s = state[p];
+      const col = th.dataset.col;
+      if (s.sortCol === col) { s.sortAsc = !s.sortAsc; }
+      else { s.sortCol = col; s.sortAsc = true; }
+      document.querySelectorAll(`thead th[data-page="${p}"]`).forEach(t => {
+        t.classList.remove('sorted');
+        t.querySelector('.sort-icon').textContent = '↕';
+      });
+      th.classList.add('sorted');
+      th.querySelector('.sort-icon').textContent = s.sortAsc ? '↑' : '↓';
+      renderTable(p);
+    });
+  });
+}
+
+// =====================================================================
+//  File management
+// =====================================================================
+async function addFiles(p, newFiles) {
+  const s = state[p];
+  for (const f of newFiles) {
+    if (!f.name.match(/\.(xls|xlsx)$/i)) {
+      showError(p, `Skipped "${f.name}" — only .xls/.xlsx accepted.`);
+      continue;
+    }
+    if (s.files.find(x => x.name === f.name)) continue;
+    const buffer = await f.arrayBuffer();
+    s.files.push({ name: f.name, buffer });
+  }
+  renderFileList(p);
+  syncButtons(p);
+}
+
+function removeFile(p, name) {
+  const s = state[p];
+  const idx = s.files.findIndex(f => f.name === name);
+  if (idx !== -1) s.files.splice(idx, 1);
+  renderFileList(p);
+  syncButtons(p);
+}
+
+function renderFileList(p) {
+  const el = document.getElementById(`file-list${p}`);
+  el.innerHTML = '';
+  for (const f of state[p].files) {
+    const tag = document.createElement('div');
+    tag.className = 'file-tag';
+    tag.innerHTML = `📄 ${escHtml(f.name)} <button class="remove-btn" title="Remove">×</button>`;
+    tag.querySelector('.remove-btn').addEventListener('click', () => removeFile(p, f.name));
+    el.appendChild(tag);
+  }
+}
+
+// =====================================================================
+//  Column detection (works for both raw reports AND summary exports)
+// =====================================================================
+function detectColumns(headers) {
+  const h = headers.map(v => String(v ?? '').toLowerCase());
+  const find = kws => h.findIndex(v => kws.some(k => v.includes(k)));
+  return {
+    pluIdx:  find(['plu']),
+    descIdx: find(['desc']),
+    qtyIdx:  find(['total qty', 'qty']),
+    amtIdx:  find(['total amt', 'total amount', 'amt', 'amount']),
+  };
+}
+
+// =====================================================================
+//  Process
+// =====================================================================
+async function processFiles(p) {
+  const s = state[p];
+  hideError(p);
+  show(`progress${p}`);
+  hide(`stats${p}`);
+  hide(`table-wrap${p}`);
+  hide(`search${p}`);
+  setBtn(p, 'process', true);
+  setBtn(p, 'export', true);
+
+  const map    = new Map();
+  const errors = [];
+  let done = 0;
+
+  for (const f of s.files) {
+    setProgressLbl(p, `Processing ${f.name}… (${done + 1}/${s.files.length})`);
+    setProgress(p, (done / s.files.length) * 90);
+
+    try {
+      const wb   = XLSX.read(f.buffer, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (rows.length < 2) { done++; continue; }
+
+      const { pluIdx, descIdx, qtyIdx, amtIdx } = detectColumns(rows[0]);
+      if (pluIdx === -1 || qtyIdx === -1 || amtIdx === -1) {
+        errors.push(`"${f.name}": required columns not found (PLU Code / Total Qty / Total Amt).`);
+        done++; continue;
+      }
+
+      for (let r = 1; r < rows.length; r++) {
+        const row  = rows[r];
+        const plu  = String(row[pluIdx] ?? '').trim();
+        if (!plu || plu.toUpperCase() === 'TOTAL') continue; // skip totals footer
+        const desc = descIdx !== -1 ? String(row[descIdx] ?? '').trim() : '';
+        const qty  = parseNum(row[qtyIdx]);
+        const amt  = parseNum(row[amtIdx]);
+
+        if (map.has(plu)) {
+          const e = map.get(plu);
+          e.qty += qty;
+          e.amt += amt;
+          if (!e.desc && desc) e.desc = desc;
+        } else {
+          map.set(plu, { desc, qty, amt });
+        }
+      }
+    } catch (err) {
+      errors.push(`"${f.name}": ${err.message}`);
+    }
+    done++;
+  }
+
+  setProgress(p, 100);
+  if (errors.length) showError(p, errors.join('\n'));
+
+  s.data = [...map.entries()].map(([plu, v]) => ({ plu, desc: v.desc, qty: v.qty, amt: v.amt }));
+  hide(`progress${p}`);
+  renderStats(p, done);
+  renderTable(p);
+  setBtn(p, 'process', false);
+  setBtn(p, 'export', s.data.length === 0);
+}
+
+function parseNum(v) {
+  if (typeof v === 'number') return v;
+  const n = parseFloat(String(v).replace(/,/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+// =====================================================================
+//  Stats
+// =====================================================================
+function renderStats(p, filesDone) {
+  const s = state[p];
+  const tQty = s.data.reduce((a, r) => a + r.qty, 0);
+  const tAmt = s.data.reduce((a, r) => a + r.amt, 0);
+  document.getElementById(`s${p}-files`).textContent = filesDone;
+  document.getElementById(`s${p}-skus`).textContent  = s.data.length.toLocaleString();
+  document.getElementById(`s${p}-qty`).textContent   = tQty.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  document.getElementById(`s${p}-amt`).textContent   = tAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById(`stats${p}`).style.display = 'flex';
+}
+
+// =====================================================================
+//  Table
+// =====================================================================
+function renderTable(p) {
+  const s     = state[p];
+  const query = (document.getElementById(`search-input${p}`).value || '').toLowerCase();
+
+  let data = query
+    ? s.data.filter(r => r.plu.toLowerCase().includes(query) || r.desc.toLowerCase().includes(query))
+    : [...s.data];
+
+  data.sort((a, b) => {
+    let va = a[s.sortCol], vb = b[s.sortCol];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return (va < vb ? -1 : va > vb ? 1 : 0) * (s.sortAsc ? 1 : -1);
+  });
+
+  document.getElementById(`tbody${p}`).innerHTML = data.map(r => `
+    <tr>
+      <td>${escHtml(r.plu)}</td>
+      <td>${escHtml(r.desc)}</td>
+      <td>${r.qty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+      <td>${r.amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+    </tr>`).join('');
+
+  const tQty = data.reduce((a, r) => a + r.qty, 0);
+  const tAmt = data.reduce((a, r) => a + r.amt, 0);
+  document.getElementById(`tfoot${p}`).innerHTML = `
+    <tr>
+      <td colspan="2"><strong>TOTAL${query ? ' (filtered)' : ''}</strong></td>
+      <td>${tQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+      <td>${tAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+    </tr>`;
+
+  document.getElementById(`row-count${p}`).textContent =
+    `${data.length.toLocaleString()} SKUs${query ? ` (filtered from ${s.data.length.toLocaleString()})` : ''}`;
+
+  show(`table-wrap${p}`);
+  show(`search${p}`);
+}
+
+// =====================================================================
+//  Export
+// =====================================================================
+function exportToExcel(p) {
+  const s     = state[p];
+  const label = p === 1 ? 'Weekly' : 'Monthly';
+
+  const from = document.getElementById(`date-from${p}`).value; // 'YYYY-MM-DD' or ''
+  const to   = document.getElementById(`date-to${p}`).value;
+
+  const rows = s.data.map(r => ({
+    'PLU Code':     r.plu,
+    'Description':  r.desc,
+    'Total Qty':    r.qty,
+    'Total Amount': r.amt,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 20 }, { wch: 45 }, { wch: 14 }, { wch: 16 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `${label} PLU Summary`);
+
+  // Build filename: use date range when provided, else today's date
+  let datePart;
+  if (from && to)       datePart = `${from}_to_${to}`;
+  else if (from)        datePart = `from_${from}`;
+  else if (to)          datePart = `to_${to}`;
+  else                  datePart = new Date().toISOString().slice(0, 10);
+
+  XLSX.writeFile(wb, `PLU_${label}_Summary_${datePart}.xlsx`);
+}
+
+// =====================================================================
+//  Clear
+// =====================================================================
+function clearAll(p) {
+  const s = state[p];
+  s.files  = [];
+  s.data   = [];
+  s.sortCol = 'plu';
+  s.sortAsc = true;
+
+  document.getElementById(`file-list${p}`).innerHTML  = '';
+  document.getElementById(`tbody${p}`).innerHTML      = '';
+  document.getElementById(`tfoot${p}`).innerHTML      = '';
+  document.getElementById(`search-input${p}`).value   = '';
+  document.getElementById(`date-from${p}`).value      = '';
+  document.getElementById(`date-to${p}`).value        = '';
+
+  hide(`table-wrap${p}`);
+  hide(`stats${p}`);
+  hide(`search${p}`);
+  hide(`progress${p}`);
+  hideError(p);
+
+  // reset sort icons
+  document.querySelectorAll(`thead th[data-page="${p}"]`).forEach((th, i) => {
+    th.classList.toggle('sorted', i === 0);
+    th.querySelector('.sort-icon').textContent = i === 0 ? '↑' : '↕';
+  });
+
+  syncButtons(p);
+}
+
+// =====================================================================
+//  Helpers
+// =====================================================================
+function syncButtons(p) {
+  const has = state[p].files.length > 0;
+  setBtn(p, 'process', !has);
+  setBtn(p, 'clear',   !has && state[p].data.length === 0);
+  if (!has) setBtn(p, 'export', true);
+}
+function setBtn(p, name, disabled) {
+  document.getElementById(`btn-${name}${p}`).disabled = disabled;
+}
+function setProgress(p, pct) {
+  document.getElementById(`progress-bar${p}`).style.width = pct + '%';
+}
+function setProgressLbl(p, txt) {
+  document.getElementById(`progress-lbl${p}`).textContent = txt;
+}
+function show(id) { document.getElementById(id).style.display = ''; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function showError(p, msg) {
+  const el = document.getElementById(`error${p}`);
+  el.style.display = 'block';
+  el.textContent   = msg;
+}
+function hideError(p) {
+  document.getElementById(`error${p}`).style.display = 'none';
+}
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// =====================================================================
+//  STEP 3 STATE
+// =====================================================================
+const s3 = {
+  skuFile:     null,   // { name, buffer }
+  salesFile:   null,   // { name, buffer }
+  data:        [],     // joined rows
+  unsold:      [],     // SKUs in master list with no sales
+  sortCol3a:   'plu', sortAsc3a: true,
+  sortCol3b:   'plu', sortAsc3b: true,
+};
+
+// =====================================================================
+//  STEP 3 INIT
+// =====================================================================
+(function initStep3() {
+
+  // Single-file upload helpers
+  function bindSingle(dropId, inputId, panel) {
+    const drop  = document.getElementById(dropId);
+    const input = document.getElementById(inputId);
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+    drop.addEventListener('drop', e => {
+      e.preventDefault(); drop.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) setS3File(panel, f);
+    });
+    input.addEventListener('change', () => {
+      if (input.files[0]) setS3File(panel, input.files[0]);
+      input.value = '';
+    });
+  }
+
+  bindSingle('drop3a', 'file-input3a', 'a');
+  bindSingle('drop3b', 'file-input3b', 'b');
+
+  document.getElementById('btn-process3').addEventListener('click', processStep3);
+  document.getElementById('btn-export3').addEventListener('click',  exportStep3);
+  document.getElementById('btn-clear3').addEventListener('click',   clearStep3);
+
+  // Preview tab switching
+  document.querySelectorAll('.preview-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preview-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.preview-pane').forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
+      btn.classList.add('active');
+      const pane = document.getElementById(btn.dataset.pane);
+      pane.classList.add('active');
+      pane.style.display = 'block';
+    });
+  });
+
+  // Sortable headers for both panes
+  ['3a','3b'].forEach(pg => {
+    document.querySelectorAll(`thead th[data-page="${pg}"]`).forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (pg === '3a') {
+          if (s3.sortCol3a === col) s3.sortAsc3a = !s3.sortAsc3a;
+          else { s3.sortCol3a = col; s3.sortAsc3a = true; }
+        } else {
+          if (s3.sortCol3b === col) s3.sortAsc3b = !s3.sortAsc3b;
+          else { s3.sortCol3b = col; s3.sortAsc3b = true; }
+        }
+        document.querySelectorAll(`thead th[data-page="${pg}"]`).forEach(t => {
+          t.classList.remove('sorted');
+          t.querySelector('.sort-icon').textContent = '↕';
+        });
+        th.classList.add('sorted');
+        th.querySelector('.sort-icon').textContent =
+          (pg === '3a' ? s3.sortAsc3a : s3.sortAsc3b) ? '↑' : '↓';
+        renderStep3Tables();
+      });
+    });
+  });
+
+})();
+
+async function setS3File(panel, f) {
+  const acceptCsv  = panel === 'a';
+  const pattern    = acceptCsv ? /\.(csv|xls|xlsx)$/i : /\.(xls|xlsx)$/i;
+  if (!f.name.match(pattern)) {
+    showError(3, `Skipped "${f.name}" — wrong file type.`);
+    return;
+  }
+  const buffer = await f.arrayBuffer();
+  if (panel === 'a') s3.skuFile   = { name: f.name, buffer };
+  else               s3.salesFile = { name: f.name, buffer };
+  renderS3FileTag(panel);
+  syncStep3Buttons();
+}
+
+function renderS3FileTag(panel) {
+  const file = panel === 'a' ? s3.skuFile : s3.salesFile;
+  const el   = document.getElementById(`file-list3${panel}`);
+  el.innerHTML = '';
+  if (!file) return;
+  const tag = document.createElement('div');
+  tag.className = 'file-tag';
+  tag.innerHTML = `📄 ${escHtml(file.name)} <button class="remove-btn" title="Remove">×</button>`;
+  tag.querySelector('.remove-btn').addEventListener('click', () => {
+    if (panel === 'a') s3.skuFile   = null;
+    else               s3.salesFile = null;
+    renderS3FileTag(panel);
+    syncStep3Buttons();
+  });
+  el.appendChild(tag);
+}
+
+function syncStep3Buttons() {
+  const ready = s3.skuFile && s3.salesFile;
+  document.getElementById('btn-process3').disabled = !ready;
+}
+
+// =====================================================================
+//  STEP 3 PROCESS
+// =====================================================================
+async function processStep3() {
+  hideError(3);
+  show('progress3');
+  hide('stats3');
+  document.getElementById('preview-tabs3').style.display = 'none';
+  document.getElementById('btn-process3').disabled = true;
+  document.getElementById('btn-export3').disabled  = true;
+
+  setProgressLbl(3, 'Loading SKU master list…');
+  setProgress(3, 10);
+
+  try {
+    // --- Parse SKU list ---
+    const skuMap      = new Map(); // exact prod_code  -> sku data
+    const skuMapStrip = new Map(); // leading-zero-stripped code -> sku data (fallback)
+    {
+      const wb   = XLSX.read(s3.skuFile.buffer, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      const h     = rows[0].map(v => String(v).trim().toLowerCase());
+      const idx   = kw => h.findIndex(v => v === kw || v.includes(kw));
+      const iCode = idx('prod_code');
+      const iDesc = idx('desc');
+      const iCost = idx('unit_cost');
+      const iSup  = idx('sup_code');
+      const iSupD = idx('sup_desc');
+      const iDept = idx('dept_code');
+      const iDeptD= idx('dept_desc');
+      const iWhole= idx('whole_code');
+      const iUom  = idx('uom_code');
+      const iWP   = idx('wholeprice');
+
+      for (let r = 1; r < rows.length; r++) {
+        const row  = rows[r];
+        const code = String(row[iCode] ?? '').trim();
+        if (!code) continue;
+        const entry = {
+          desc:       iDesc !== -1 ? String(row[iDesc] ?? '').trim() : '',
+          unit_cost:  parseNum(row[iCost]),
+          sup_code:   String(row[iSup]   ?? '').trim(),
+          sup_desc:   String(row[iSupD]  ?? '').trim(),
+          dept_code:  String(row[iDept]  ?? '').trim(),
+          dept_desc:  String(row[iDeptD] ?? '').trim(),
+          whole_code: String(row[iWhole] ?? '').trim(),
+          uom_code:   String(row[iUom]   ?? '').trim(),
+          wholeprice: parseNum(row[iWP]),
+        };
+        skuMap.set(code, entry);
+        // secondary map keyed by stripped code — only store first occurrence
+        const stripped = code.replace(/^0+/, '') || '0';
+        if (!skuMapStrip.has(stripped)) skuMapStrip.set(stripped, entry);
+      }
+    }
+
+    // Lookup helper: exact first, then leading-zero-tolerant fallback
+    const skuLookup = plu => {
+      if (skuMap.has(plu)) return skuMap.get(plu);
+      const stripped = plu.replace(/^0+/, '') || '0';
+      return skuMapStrip.get(stripped) ?? null;
+    };
+
+    setProgressLbl(3, 'Loading monthly summary…');
+    setProgress(3, 40);
+
+    // --- Parse monthly sales summary ---
+    const salesRows = [];
+    {
+      const wb   = XLSX.read(s3.salesFile.buffer, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (rows.length < 2) throw new Error('Monthly summary file appears empty.');
+
+      const { pluIdx, descIdx, qtyIdx, amtIdx } = detectColumns(rows[0]);
+      if (pluIdx === -1 || qtyIdx === -1 || amtIdx === -1)
+        throw new Error('Monthly summary: required columns not found.');
+
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        const plu = String(row[pluIdx] ?? '').trim();
+        if (!plu || plu.toUpperCase() === 'TOTAL') continue;
+        salesRows.push({
+          plu,
+          desc: descIdx !== -1 ? String(row[descIdx] ?? '').trim() : '',
+          qty:  parseNum(row[qtyIdx]),
+          amt:  parseNum(row[amtIdx]),
+        });
+      }
+    }
+
+    setProgressLbl(3, 'Joining SKU data…');
+    setProgress(3, 75);
+
+    // --- Join ---
+    s3.data = salesRows.map(s => {
+      const sku  = skuLookup(s.plu);
+      const cost = sku ? sku.unit_cost : 0;
+      const cogs = cost * s.qty;
+      return {
+        plu:        s.plu,
+        desc:       s.desc,
+        qty:        s.qty,
+        amt:        s.amt,
+        unit_cost:  sku ? cost : null,
+        cogs:       sku ? cogs : null,
+        profit:     sku ? (s.amt - cogs) : null,
+        sup_code:   sku ? sku.sup_code   : '',
+        sup_desc:   sku ? sku.sup_desc   : '',
+        dept_code:  sku ? sku.dept_code  : '',
+        dept_desc:  sku ? sku.dept_desc  : '',
+        whole_code: sku ? sku.whole_code : '',
+        uom_code:   sku ? sku.uom_code   : '',
+        wholeprice: sku ? sku.wholeprice : null,
+        matched:    sku !== null,
+      };
+    });
+
+    // --- Unsold SKUs ---
+    const soldPluSet = new Set();
+    for (const s of salesRows) {
+      soldPluSet.add(s.plu);
+      soldPluSet.add(s.plu.replace(/^0+/, '') || '0');
+    }
+    s3.unsold = [];
+    for (const [code, entry] of skuMap) {
+      const stripped = code.replace(/^0+/, '') || '0';
+      if (!soldPluSet.has(code) && !soldPluSet.has(stripped)) {
+        s3.unsold.push({
+          plu:        code,
+          desc:       entry.desc,
+          sup_code:   entry.sup_code,
+          sup_desc:   entry.sup_desc,
+          dept_code:  entry.dept_code,
+          dept_desc:  entry.dept_desc,
+          unit_cost:  entry.unit_cost,
+          uom_code:   entry.uom_code,
+          wholeprice: entry.wholeprice,
+        });
+      }
+    }
+
+    setProgress(3, 100);
+    hide('progress3');
+    renderStep3Stats();
+    renderStep3Tables();
+    document.getElementById('preview-tabs3').style.display = 'block';
+    document.getElementById('btn-export3').disabled = false;
+
+  } catch (err) {
+    hide('progress3');
+    showError(3, err.message);
+  }
+
+  document.getElementById('btn-process3').disabled = false;
+}
+
+// =====================================================================
+//  STEP 3 STATS
+// =====================================================================
+function renderStep3Stats() {
+  const matched   = s3.data.filter(r => r.matched).length;
+  const unmatched = s3.data.length - matched;
+  const revenue   = s3.data.reduce((a, r) => a + r.amt, 0);
+  const cogs      = s3.data.reduce((a, r) => a + (r.cogs   ?? 0), 0);
+  const profit    = s3.data.reduce((a, r) => a + (r.profit ?? 0), 0);
+
+  document.getElementById('s3-matched').textContent   = matched.toLocaleString();
+  document.getElementById('s3-unmatched').textContent = unmatched.toLocaleString();
+  document.getElementById('s3-revenue').textContent   = revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('s3-cogs').textContent      = cogs.toLocaleString(undefined,    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('s3-profit').textContent    = profit.toLocaleString(undefined,  { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('stats3').style.display     = 'flex';
+}
+
+// =====================================================================
+//  STEP 3 TABLES
+// =====================================================================
+function renderStep3Tables() {
+  renderPane3a();
+  renderPane3b();
+}
+
+function sortData3(data, col, asc) {
+  return [...data].sort((a, b) => {
+    let va, vb;
+    if (col === 'margin') {
+      va = (a.profit !== null && a.amt) ? a.profit / a.amt * 100 : null;
+      vb = (b.profit !== null && b.amt) ? b.profit / b.amt * 100 : null;
+      va = va ?? -Infinity;
+      vb = vb ?? -Infinity;
+    } else {
+      va = a[col] ?? '';
+      vb = b[col] ?? '';
+    }
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return (va < vb ? -1 : va > vb ? 1 : 0) * (asc ? 1 : -1);
+  });
+}
+
+function fmt(v, dec = 2) {
+  if (v === null || v === undefined || v === '') return '—';
+  return Number(v).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function renderPane3a() {
+  // Pre-compute derived metrics on full dataset
+  const totalAmt    = s3.data.reduce((a, r) => a + r.amt, 0);
+  const totalQty    = s3.data.reduce((a, r) => a + r.qty, 0);
+  const totalProfit = s3.data.reduce((a, r) => a + (r.profit ?? 0), 0);
+
+  // ABC classification: sort by revenue desc, assign cumulative buckets
+  const byAmt = [...s3.data].sort((a, b) => b.amt - a.amt);
+  let cumAmt = 0;
+  for (const r of byAmt) {
+    cumAmt += r.amt;
+    const pct = totalAmt ? cumAmt / totalAmt : 0;
+    r.abc = pct <= 0.70 ? 'A' : pct <= 0.90 ? 'B' : 'C';
+  }
+  // Store per-row derived fields so sortData3 can access them
+  for (const r of s3.data) {
+    r.avg_price      = r.qty     ? r.amt / r.qty : null;
+    r.sales_mix      = totalAmt  ? r.amt / totalAmt * 100 : null;
+    r.profit_contrib = totalProfit ? (r.profit ?? 0) / totalProfit * 100 : null;
+  }
+
+  const data = sortData3(s3.data, s3.sortCol3a, s3.sortAsc3a);
+  document.getElementById('tbody3a').innerHTML = data.map(r => {
+    const margin = (r.profit !== null && r.amt) ? r.profit / r.amt * 100 : null;
+    const profitClass  = r.profit === null ? '' : r.profit >= 0 ? 'profit-pos' : 'profit-neg';
+    const marginClass  = margin === null ? '' : margin >= 0 ? 'profit-pos' : 'profit-neg';
+    const pcClass      = r.profit_contrib === null ? '' : r.profit_contrib >= 0 ? 'profit-pos' : 'profit-neg';
+    const abcClass     = r.abc === 'A' ? 'abc-a' : r.abc === 'B' ? 'abc-b' : 'abc-c';
+    return `<tr>
+      <td>${escHtml(r.plu)}</td>
+      <td>${escHtml(r.desc)}</td>
+      <td style="text-align:right">${fmt(r.qty, 0)}</td>
+      <td style="text-align:right">${fmt(r.amt)}</td>
+      <td style="text-align:right">${fmt(r.unit_cost)}</td>
+      <td style="text-align:right">${fmt(r.cogs)}</td>
+      <td style="text-align:right" class="${profitClass}">${fmt(r.profit)}</td>
+      <td style="text-align:right" class="${marginClass}">${margin !== null ? margin.toFixed(1) + '%' : '&mdash;'}</td>
+      <td style="text-align:right">${r.avg_price !== null ? fmt(r.avg_price) : '&mdash;'}</td>
+      <td style="text-align:right">${r.sales_mix !== null ? r.sales_mix.toFixed(2) + '%' : '&mdash;'}</td>
+      <td style="text-align:right" class="${pcClass}">${r.profit_contrib !== null ? r.profit_contrib.toFixed(2) + '%' : '&mdash;'}</td>
+      <td style="text-align:center"><span class="abc-badge ${abcClass}">${r.abc ?? '&mdash;'}</span></td>
+      <td>${escHtml(r.sup_code)}</td>
+      <td>${escHtml(r.sup_desc)}</td>
+      <td>${escHtml(r.dept_code)}</td>
+      <td>${escHtml(r.dept_desc)}</td>
+      <td>${escHtml(r.whole_code)}</td>
+      <td>${escHtml(r.uom_code)}</td>
+      <td style="text-align:right">${fmt(r.wholeprice)}</td>
+    </tr>`;
+  }).join('');
+
+  const tAmt    = data.reduce((a, r) => a + r.amt, 0);
+  const tQty    = data.reduce((a, r) => a + r.qty, 0);
+  const tCogs   = data.reduce((a, r) => a + (r.cogs   ?? 0), 0);
+  const tProfit = data.reduce((a, r) => a + (r.profit ?? 0), 0);
+  const tMargin = tAmt ? tProfit / tAmt * 100 : null;
+  const tAvgPrice = tQty ? tAmt / tQty : null;
+  const cntA = data.filter(r => r.abc === 'A').length;
+  const cntB = data.filter(r => r.abc === 'B').length;
+  const cntC = data.filter(r => r.abc === 'C').length;
+  const pc = tProfit >= 0 ? '#3a7a6a' : '#dc2626';
+  const mc = tMargin === null ? '' : tMargin >= 0 ? '#3a7a6a' : '#dc2626';
+  document.getElementById('tfoot3a').innerHTML = `
+    <tr>
+      <td colspan="3"><strong>TOTAL</strong></td>
+      <td style="text-align:right;color:#4C8577">${fmt(tAmt)}</td>
+      <td></td>
+      <td style="text-align:right;color:#4C8577">${fmt(tCogs)}</td>
+      <td style="text-align:right;color:${pc}">${fmt(tProfit)}</td>
+      <td style="text-align:right;color:${mc}">${tMargin !== null ? tMargin.toFixed(1) + '%' : '&mdash;'}</td>
+      <td style="text-align:right">${tAvgPrice !== null ? fmt(tAvgPrice) : '&mdash;'}</td>
+      <td style="text-align:right;color:#4C8577">100%</td>
+      <td style="text-align:right;color:${pc}">100%</td>
+      <td style="text-align:center;font-size:0.78rem;color:#475569">A:${cntA} B:${cntB} C:${cntC}</td>
+      <td colspan="7"></td>
+    </tr>`;
+  document.getElementById('row-count3a').textContent = `${data.length.toLocaleString()} SKUs`;
+}
+
+function renderPane3b() {
+  const data = [...s3.unsold].sort((a, b) => {
+    let va = a[s3.sortCol3b] ?? '', vb = b[s3.sortCol3b] ?? '';
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return (va < vb ? -1 : va > vb ? 1 : 0) * (s3.sortAsc3b ? 1 : -1);
+  });
+  document.getElementById('tbody3b').innerHTML = data.map(r => `<tr>
+    <td>${escHtml(r.plu)}</td>
+    <td>${escHtml(r.desc)}</td>
+    <td>${escHtml(r.sup_code)}</td>
+    <td>${escHtml(r.sup_desc)}</td>
+    <td>${escHtml(r.dept_code)}</td>
+    <td>${escHtml(r.dept_desc)}</td>
+    <td style="text-align:right">${fmt(r.unit_cost)}</td>
+    <td>${escHtml(r.uom_code)}</td>
+    <td style="text-align:right">${fmt(r.wholeprice)}</td>
+  </tr>`).join('');
+  document.getElementById('tfoot3b').innerHTML = '';
+  document.getElementById('row-count3b').textContent = `${data.length.toLocaleString()} non-moving SKUs`;
+}
+
+// =====================================================================
+//  STEP 3 EXPORT
+// =====================================================================
+function exportStep3() {
+  const from = document.getElementById('date-from3').value;
+  const to   = document.getElementById('date-to3').value;
+  let datePart;
+  if (from && to)  datePart = `${from}_to_${to}`;
+  else if (from)   datePart = `from_${from}`;
+  else if (to)     datePart = `to_${to}`;
+  else             datePart = new Date().toISOString().slice(0, 10);
+
+  const wb = XLSX.utils.book_new();
+
+  // --- Sheet 1: Sales & COGS ---
+  // Ensure derived metrics are current (renderPane3a may not have run yet)
+  const _totAmt = s3.data.reduce((a, r) => a + r.amt, 0);
+  const _totProfit = s3.data.reduce((a, r) => a + (r.profit ?? 0), 0);
+  const _byAmt = [...s3.data].sort((a, b) => b.amt - a.amt);
+  let _cum = 0;
+  for (const r of _byAmt) { _cum += r.amt; const p = _totAmt ? _cum / _totAmt : 0; r.abc = p <= 0.70 ? 'A' : p <= 0.90 ? 'B' : 'C'; }
+  for (const r of s3.data) {
+    r.avg_price      = r.qty    ? r.amt / r.qty : null;
+    r.sales_mix      = _totAmt  ? r.amt / _totAmt * 100 : null;
+    r.profit_contrib = _totProfit ? (r.profit ?? 0) / _totProfit * 100 : null;
+  }
+
+  const sheet1Rows = s3.data.map(r => {
+    const margin = (r.profit !== null && r.amt) ? parseFloat((r.profit / r.amt * 100).toFixed(2)) : '';
+    return {
+      'PLU Code':           r.plu,
+      'Description':        r.desc,
+      'Total Qty':          r.qty,
+      'Total Amount':       r.amt,
+      'Avg Selling Price':  r.avg_price      !== null ? parseFloat(r.avg_price.toFixed(2))      : '',
+      'Unit Cost':          r.unit_cost ?? '',
+      'COGS':               r.cogs      ?? '',
+      'Profit':             r.profit    ?? '',
+      'Profit Margin %':    margin,
+      'Sales Mix %':        r.sales_mix      !== null ? parseFloat(r.sales_mix.toFixed(2))      : '',
+      'Profit Contrib %':   r.profit_contrib !== null ? parseFloat(r.profit_contrib.toFixed(2)) : '',
+      'ABC':                r.abc ?? '',
+      'Sup Code':           r.sup_code,
+      'Supplier':           r.sup_desc,
+      'Dept Code':          r.dept_code,
+      'Department':         r.dept_desc,
+      'Whole Code':         r.whole_code,
+      'UOM':                r.uom_code,
+      'Whole Price':        r.wholeprice ?? '',
+    };
+  });
+  const ws1 = XLSX.utils.json_to_sheet(sheet1Rows);
+  ws1['!cols'] = [
+    {wch:20},{wch:40},{wch:12},{wch:14},{wch:16},{wch:11},{wch:14},{wch:14},{wch:16},{wch:12},{wch:15},{wch:6},
+    {wch:12},{wch:30},{wch:11},{wch:20},{wch:14},{wch:8},{wch:13}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Sales & COGS');
+
+  // --- Sheet 2: Unsold SKUs ---
+  if (s3.unsold.length > 0) {
+    const sheet2Rows = s3.unsold.map(r => ({
+      'PLU Code':    r.plu,
+      'Description': r.desc,
+      'Sup Code':    r.sup_code,
+      'Supplier':    r.sup_desc,
+      'Dept Code':   r.dept_code,
+      'Department':  r.dept_desc,
+      'Unit Cost':   r.unit_cost  ?? '',
+      'UOM':         r.uom_code,
+      'Whole Price': r.wholeprice ?? '',
+    }));
+    const ws2 = XLSX.utils.json_to_sheet(sheet2Rows);
+    ws2['!cols'] = [{wch:20},{wch:40},{wch:12},{wch:30},{wch:11},{wch:20},{wch:11},{wch:8},{wch:13}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Unsold SKUs');
+  }
+
+  XLSX.writeFile(wb, `PLU_Profit_Analysis_${datePart}.xlsx`);
+}
+
+// =====================================================================
+//  STEP 3 CLEAR
+// =====================================================================
+function clearStep3() {
+  s3.skuFile = null; s3.salesFile = null; s3.data = []; s3.unsold = [];
+  s3.sortCol3a = 'plu'; s3.sortAsc3a = true;
+  s3.sortCol3b = 'plu'; s3.sortAsc3b = true;
+  renderS3FileTag('a'); renderS3FileTag('b');
+  document.getElementById('tbody3a').innerHTML = '';
+  document.getElementById('tfoot3a').innerHTML = '';
+  document.getElementById('tbody3b').innerHTML = '';
+  document.getElementById('tfoot3b').innerHTML = '';
+  document.getElementById('stats3').style.display = 'none';
+  document.getElementById('preview-tabs3').style.display = 'none';
+  document.getElementById('date-from3').value = '';
+  document.getElementById('date-to3').value   = '';
+  hide('progress3');
+  hideError(3);
+  document.getElementById('btn-process3').disabled = true;
+  document.getElementById('btn-export3').disabled  = true;
+}
+
+// =====================================================================
+//  STEP 4 — PDF REPORT
+// =====================================================================
+
+// PDF colour palette (RGB arrays for jsPDF)
+const PC = {
+  brown:  [84,  75,  61],
+  forest: [78, 110,  88],
+  teal:   [76, 133, 119],
+  mint:   [122,223, 187],
+  mintlt: [166,236, 224],
+  white:  [255,255, 255],
+  offwht: [245,248, 246],
+  ltgrey: [228,234, 230],
+  textdk: [ 50, 50,  50],
+  textmd: [100,110, 105],
+  textlt: [160,165, 162],
+  red:    [220, 38,  38],
+  green:  [ 58,122, 106],
+};
+
+const CHART_PALETTE = [
+  [78,110,88],[76,133,119],[122,223,187],[84,75,61],
+  [107,158,138],[139,191,159],[58,122,106],[42,107,92],
+  [166,236,224],[50,85,65],
+];
+
+// Step 4 own file state
+const s4 = { file: null, data: [] };
+
+// ---- Init Step 4 ----
+(function initStep4() {
+  document.getElementById('btn-gen-pdf').addEventListener('click', generatePDFReport);
+
+  // Upload zone
+  const drop4  = document.getElementById('drop4');
+  const input4 = document.getElementById('file-input4');
+
+  drop4.addEventListener('dragover', e => { e.preventDefault(); drop4.classList.add('drag-over'); });
+  drop4.addEventListener('dragleave', () => drop4.classList.remove('drag-over'));
+  drop4.addEventListener('drop', e => {
+    e.preventDefault(); drop4.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) loadS4File(f);
+  });
+  input4.addEventListener('change', () => {
+    if (input4.files[0]) loadS4File(input4.files[0]);
+    input4.value = '';
+  });
+
+  // Update status card whenever tab 4 is opened
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.dataset.page === 'page4') updateReportStatus();
+    });
+  });
+})();
+
+async function loadS4File(f) {
+  if (!f.name.match(/\.(xls|xlsx)$/i)) { showError(4, `"${f.name}" is not an Excel file.`); return; }
+  hideError(4);
+
+  const buffer = await f.arrayBuffer();
+  s4.file = { name: f.name };
+
+  try {
+    const wb   = XLSX.read(buffer, { type: 'array' });
+    // Prefer "Sales & COGS" sheet, fall back to first sheet
+    const sheetName = wb.SheetNames.find(n => /sales.*cogs|cogs.*sales/i.test(n)) || wb.SheetNames[0];
+    const ws   = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (rows.length < 2) throw new Error('File appears empty.');
+
+    const h   = rows[0].map(v => String(v).trim().toLowerCase());
+    const col = kws => h.findIndex(v => kws.some(k => v.includes(k)));
+
+    const iPlu   = col(['plu']);
+    const iDesc  = col(['desc']);
+    const iQty   = col(['total qty','qty']);
+    const iAmt   = col(['total amount','total amt','amt','amount']);
+    const iCost  = col(['unit cost','unit_cost']);
+    const iCogs  = col(['cogs']);
+    const iProf  = col(['profit']);
+    const iSupC  = col(['sup code','sup_code']);
+    const iSupD  = col(['supplier','sup_desc','sup desc']);
+    const iDeptC = col(['dept code','dept_code']);
+    const iDeptD = col(['department','dept_desc','dept desc']);
+    const iWhole = col(['whole code','whole_code']);
+    const iUom   = col(['uom']);
+    const iWP    = col(['whole price','wholeprice']);
+
+    if (iPlu === -1 || iQty === -1 || iAmt === -1)
+      throw new Error('Could not find required columns (PLU Code, Total Qty, Total Amount).');
+
+    s4.data = [];
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const plu = String(row[iPlu] ?? '').trim();
+      if (!plu || plu.toUpperCase() === 'TOTAL') continue;
+      s4.data.push({
+        plu,
+        desc:       iDesc  !== -1 ? String(row[iDesc]  ?? '').trim() : '',
+        qty:        parseNum(row[iQty]),
+        amt:        parseNum(row[iAmt]),
+        unit_cost:  iCost  !== -1 ? parseNum(row[iCost])  : null,
+        cogs:       iCogs  !== -1 ? parseNum(row[iCogs])  : null,
+        profit:     iProf  !== -1 ? parseNum(row[iProf])  : null,
+        sup_code:   iSupC  !== -1 ? String(row[iSupC]  ?? '').trim() : '',
+        sup_desc:   iSupD  !== -1 ? String(row[iSupD]  ?? '').trim() : '',
+        dept_code:  iDeptC !== -1 ? String(row[iDeptC] ?? '').trim() : '',
+        dept_desc:  iDeptD !== -1 ? String(row[iDeptD] ?? '').trim() : '',
+        whole_code: iWhole !== -1 ? String(row[iWhole] ?? '').trim() : '',
+        uom_code:   iUom   !== -1 ? String(row[iUom]   ?? '').trim() : '',
+        wholeprice: iWP    !== -1 ? parseNum(row[iWP])   : null,
+        matched:    iCogs  !== -1 && row[iCogs] !== '',
+      });
+    }
+  } catch (err) {
+    s4.file = null; s4.data = [];
+    showError(4, 'Could not read file: ' + err.message);
+    renderS4FileTag(); updateReportStatus(); return;
+  }
+
+  renderS4FileTag();
+  updateReportStatus();
+}
+
+function renderS4FileTag() {
+  const el = document.getElementById('file-list4');
+  el.innerHTML = '';
+  if (!s4.file) return;
+  const tag = document.createElement('div');
+  tag.className = 'file-tag';
+  tag.innerHTML = `📄 ${escHtml(s4.file.name)} <span style="margin-left:4px;color:#4C8577;font-size:0.76rem;">(${s4.data.length.toLocaleString()} SKUs)</span> <button class="remove-btn" title="Remove">×</button>`;
+  tag.querySelector('.remove-btn').addEventListener('click', () => {
+    s4.file = null; s4.data = [];
+    renderS4FileTag(); updateReportStatus();
+  });
+  el.appendChild(tag);
+}
+
+function updateReportStatus() {
+  const wrap   = document.getElementById('report-status-wrap');
+  const useS4  = s4.data && s4.data.length > 0;
+  const useS3  = s3.data && s3.data.length > 0;
+  const active = useS4 ? s4.data : useS3 ? s3.data : null;
+
+  if (useS4) {
+    const rev = s4.data.reduce((a,r)=>a+r.amt,0);
+    wrap.innerHTML = `
+      <div class="report-status-card ready">
+        <span class="status-icon">✅</span>
+        <div class="status-text">
+          <strong>Uploaded file loaded — ${s4.data.length.toLocaleString()} SKUs</strong>
+          <span>Source: ${escHtml(s4.file.name)} &nbsp;|&nbsp; Revenue: ${rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} &nbsp;|&nbsp; Ready to generate report.</span>
+        </div>
+      </div>`;
+  } else if (useS3) {
+    const rev = s3.data.reduce((a,r)=>a+r.amt,0);
+    wrap.innerHTML = `
+      <div class="report-status-card ready" style="border-color:#4E6E58;background:#eef4f0;">
+        <span class="status-icon">📊</span>
+        <div class="status-text">
+          <strong>Using live Step 3 data — ${s3.data.length.toLocaleString()} SKUs</strong>
+          <span>Revenue: ${rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} &nbsp;|&nbsp; Upload a file above to override, or click Generate to use this data.</span>
+        </div>
+      </div>`;
+  } else {
+    wrap.innerHTML = `
+      <div class="report-status-card missing">
+        <span class="status-icon">⚠️</span>
+        <div class="status-text">
+          <strong>No data loaded yet</strong>
+          <span>Upload your exported Step 3 Excel file above, or complete Step 3 first to use live data.</span>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('btn-gen-pdf').disabled = !active;
+}
+
+// ---- Chart renderer ----
+async function renderChartToImage(config, widthPx, heightPx) {
+  const canvas = document.createElement('canvas');
+  canvas.width  = widthPx;
+  canvas.height = heightPx;
+  canvas.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+  document.body.appendChild(canvas);
+  return new Promise(resolve => {
+    try {
+      const chart = new Chart(canvas.getContext('2d'), {
+        ...config,
+        options: { ...(config.options || {}), animation: { duration: 0 }, responsive: false },
+      });
+      // Give Chart.js 300ms to fully paint before capturing
+      setTimeout(() => {
+        try {
+          const img = canvas.toDataURL('image/png');
+          chart.destroy();
+          if (document.body.contains(canvas)) document.body.removeChild(canvas);
+          resolve(img && img.length > 500 ? img : null);
+        } catch(e) {
+          if (document.body.contains(canvas)) document.body.removeChild(canvas);
+          resolve(null);
+        }
+      }, 300);
+    } catch(e) {
+      console.warn('Chart render failed:', e);
+      if (document.body.contains(canvas)) document.body.removeChild(canvas);
+      resolve(null);
+    }
+  });
+}
+
+// Safe addImage — skips if image is null/invalid
+function safeImg(doc, img, x, y, w, h) {
+  if (img && typeof img === 'string' && img.startsWith('data:')) {
+    try { doc.addImage(img, 'PNG', x, y, w, h); return true; }
+    catch(e) { console.warn('addImage skipped:', e.message); }
+  }
+  return false;
+}
+
+// ---- Number formatters ----
+function pf(v, dec = 2) {
+  if (v == null) return '-';
+  var n = Number(v);
+  if (!isFinite(n)) return '-';
+  var sign = n < 0 ? '-' : '';
+  return sign + Math.abs(n).toLocaleString('en', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function pp(v) { return Number(v).toFixed(1) + '%'; }
+
+// Strip to printable ASCII only — Helvetica in jsPDF guarantees 0x20-0x7E only
+function ps(str) {
+  if (str == null) return '';
+  return String(str).replace(/[^\x20-\x7E]/g, '');
+}
+
+// ---- Main PDF generator ----
+async function generatePDFReport() {
+  // Use uploaded file data first, fall back to live Step 3 data
+  const data4 = (s4.data && s4.data.length > 0) ? s4.data : s3.data;
+  if (!data4 || !data4.length) { showError(4, 'No data. Upload a file or complete Step 3 first.'); return; }
+
+  const btn = document.getElementById('btn-gen-pdf');
+  const genDiv = document.getElementById('pdf-generating');
+  const statusLbl = document.getElementById('pdf-gen-status');
+  btn.disabled = true;
+  genDiv.style.display = 'flex';
+  hideError(4);
+
+  const setStatus = t => { statusLbl.textContent = t; };
+
+  try {
+    setStatus('Computing metrics…');
+    const data = data4;
+
+    // ---- Metrics ----
+    const totalRev    = data.reduce((a,r) => a + r.amt, 0);
+    const totalCOGS   = data.reduce((a,r) => a + (r.cogs   ?? 0), 0);
+    const totalProfit = data.reduce((a,r) => a + (r.profit ?? 0), 0);
+    const totalQty    = data.reduce((a,r) => a + r.qty, 0);
+    const grossMargin = totalRev > 0 ? totalProfit / totalRev * 100 : 0;
+    const unmatched   = data.filter(r => !r.matched).length;
+
+    // Dept breakdown
+    const deptMap = new Map();
+    for (const r of data) {
+      const k = r.dept_desc || 'Unassigned';
+      if (!deptMap.has(k)) deptMap.set(k, { code: r.dept_code, skus:0, qty:0, rev:0, cogs:0, profit:0 });
+      const d = deptMap.get(k);
+      d.skus++; d.qty += r.qty; d.rev += r.amt;
+      d.cogs += r.cogs ?? 0; d.profit += r.profit ?? 0;
+    }
+    const depts = [...deptMap.entries()]
+      .map(([name, v]) => ({ name, ...v, margin: v.rev > 0 ? v.profit/v.rev*100 : 0 }))
+      .sort((a,b) => b.rev - a.rev);
+
+    // Supplier breakdown
+    const supMap = new Map();
+    for (const r of data) {
+      const k = r.sup_desc || 'Unknown';
+      if (!supMap.has(k)) supMap.set(k, { code: r.sup_code, skus:0, qty:0, rev:0, cogs:0, profit:0 });
+      const s = supMap.get(k);
+      s.skus++; s.qty += r.qty; s.rev += r.amt;
+      s.cogs += r.cogs ?? 0; s.profit += r.profit ?? 0;
+    }
+    const sups = [...supMap.entries()]
+      .map(([name, v]) => ({ name, ...v, margin: v.rev > 0 ? v.profit/v.rev*100 : 0 }))
+      .sort((a,b) => b.rev - a.rev);
+
+    const top10Rev  = [...data].sort((a,b) => b.amt - a.amt).slice(0, 10);
+    const top10Prof = [...data].filter(r => r.profit != null).sort((a,b) => b.profit - a.profit).slice(0, 10);
+    const bot10Prof = [...data].filter(r => r.profit != null).sort((a,b) => a.profit - b.profit).slice(0, 10);
+    const negItems  = data.filter(r => r.profit != null && r.profit < 0);
+
+    const from = document.getElementById('date-from4').value;
+    const to   = document.getElementById('date-to4').value;
+    const periodLabel = from && to ? `${from}  to  ${to}` : from ? `From ${from}` : to ? `To ${to}` : 'All Periods';
+
+    // ---- Charts ----
+    setStatus('Rendering charts… (this may take a few seconds)');
+    await new Promise(r => setTimeout(r, 50)); // let UI update before heavy work
+    const top8 = depts.slice(0, 8);
+    const clr  = (i) => `rgb(${CHART_PALETTE[i % 10]})`;
+    const clrA = (i, a) => `rgba(${CHART_PALETTE[i % 10]},${a})`;
+
+    // Chart 1: Grouped bar — Revenue / COGS / Profit by dept
+    const chart1 = await renderChartToImage({
+      type: 'bar',
+      data: {
+        labels: top8.map(d => d.name.length > 14 ? d.name.slice(0,14)+'...' : d.name),
+        datasets: [
+          { label:'Revenue', data: top8.map(d=>d.rev),    backgroundColor: top8.map((_,i)=>clr(i)) },
+          { label:'COGS',    data: top8.map(d=>d.cogs),   backgroundColor: top8.map((_,i)=>clrA(i,0.45)) },
+          { label:'Profit',  data: top8.map(d=>d.profit), backgroundColor: `rgba(${PC.mint},0.85)` },
+        ],
+      },
+      options: {
+        plugins: { legend: { position:'bottom', labels:{ font:{size:10}, boxWidth:12, padding:8 } } },
+        scales:  { y:{ ticks:{font:{size:9}} }, x:{ ticks:{font:{size:9}} } },
+      },
+    }, 720, 340);
+
+    // Chart 2: Doughnut — revenue share by dept
+    const chart2 = await renderChartToImage({
+      type: 'doughnut',
+      data: {
+        labels: top8.map(d => d.name.length > 18 ? d.name.slice(0,18)+'...' : d.name),
+        datasets: [{ data: top8.map(d=>d.rev), backgroundColor: top8.map((_,i)=>clr(i)), borderWidth:1 }],
+      },
+      options: {
+        cutout: '52%',
+        plugins: { legend: { position:'right', labels:{ font:{size:10}, boxWidth:12 } } },
+      },
+    }, 520, 290);
+
+    // Chart 3: Horizontal bar — top 10 SKUs by revenue
+    const chart3 = await renderChartToImage({
+      type: 'bar',
+      data: {
+        labels: top10Rev.map(r => r.desc.length > 24 ? r.desc.slice(0,24)+'...' : r.desc),
+        datasets: [{ label:'Revenue', data: top10Rev.map(r=>r.amt),
+          backgroundColor: top10Rev.map((_,i)=>clr(i)), borderRadius:3 }],
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: { legend:{display:false} },
+        scales: { x:{ ticks:{font:{size:9}} }, y:{ ticks:{font:{size:9}} } },
+      },
+    }, 620, 310);
+
+    // ---- Build PDF ----
+    setStatus('Building PDF pages…');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+    // Helper: sanitize a full autoTable body row so every cell is a safe ASCII string
+    function cleanRow(arr) {
+      return arr.map(function(v) {
+        if (v == null) return '';
+        if (typeof v === 'number') return isFinite(v) ? String(v) : '-';
+        return ps(String(v));
+      });
+    }
+    // Helper: safe finalY read — avoids NaN if lastAutoTable is missing
+    function finalY(fallback) {
+      return (doc.lastAutoTable && typeof doc.lastAutoTable.finalY === 'number')
+        ? doc.lastAutoTable.finalY : fallback;
+    }
+
+    const W=210, H=297, ML=15, MR=15, CW=180;
+
+    const fc = (...c) => doc.setFillColor(...c);
+    const tc = (...c) => doc.setTextColor(...c);
+    const dc = (...c) => doc.setDrawColor(...c);
+
+    // ======== COVER PAGE ========
+    fc(...PC.brown);  doc.rect(0, 0, W, H, 'F');
+    fc(...PC.forest); doc.rect(0, 0, W, 26, 'F');
+    fc(...PC.teal);   doc.rect(0, 26, W, 2, 'F');
+
+    tc(...PC.mint); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('PLU SALES SUMMARIZER', ML, 11);
+    tc(...PC.mintlt); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.text('Automated Store Performance Report', ML, 18);
+
+    tc(...PC.white); doc.setFont('helvetica','bold');
+    doc.setFontSize(38); doc.text('SALES', ML, 88);
+    doc.setFontSize(38); doc.text('PERFORMANCE', ML, 108);
+    tc(...PC.mint);
+    doc.setFontSize(38); doc.text('REPORT', ML, 128);
+
+    dc(...PC.mint); doc.setLineWidth(0.6);
+    doc.line(ML, 136, ML+90, 136);
+
+    tc(210,225,220); doc.setFont('helvetica','normal'); doc.setFontSize(11);
+    doc.text(ps(`Period:  ${periodLabel}`), ML, 150);
+    tc(...PC.textlt); doc.setFontSize(8.5);
+    doc.text(ps(`Generated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}`), ML, 160);
+
+    // Cover KPI boxes
+    const covKpis = [
+      { label:'Total Revenue',  val: pf(totalRev),          col: PC.teal   },
+      { label:'Total COGS',     val: pf(totalCOGS),         col: PC.forest },
+      { label:'Gross Profit',   val: pf(totalProfit),       col: PC.mint   },
+      { label:'Gross Margin',   val: pp(grossMargin),       col: PC.mintlt },
+    ];
+    covKpis.forEach((k, i) => {
+      const kx = ML + i * 44.5;
+      fc(...k.col); doc.roundedRect(kx, 182, 42, 24, 2, 2, 'F');
+      tc(...PC.brown);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      doc.text(ps(k.label), kx+21, 190, {align:'center'});
+      doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      doc.text(ps(k.val), kx+21, 199, {align:'center'});
+    });
+
+    tc(...PC.textlt); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.text('CONFIDENTIAL - FOR INTERNAL USE ONLY', W/2, H-10, {align:'center'});
+
+    // ======== PAGE 2: EXECUTIVE SUMMARY ========
+    doc.addPage();
+    let y = pdfHeader(doc, 'EXECUTIVE SUMMARY', W, ML, PC);
+
+    // 4 KPI cards
+    const cardW = (CW - 9) / 4;
+    const cards = [
+      { label:'Total Revenue',   val: pf(totalRev),    sub:`${data.length} unique SKUs`, col: PC.teal   },
+      { label:'Total COGS',      val: pf(totalCOGS),   sub:'Cost of goods sold',         col: PC.forest },
+      { label:'Gross Profit',    val: pf(totalProfit), sub: totalProfit>=0?'(+) Positive':'(-) Negative', col: totalProfit>=0?PC.mint:PC.red },
+      { label:'Gross Margin %',  val: pp(grossMargin), sub:`${totalQty.toLocaleString('en')} units sold`, col: PC.mintlt },
+    ];
+    cards.forEach((c,i) => pdfKpiCard(doc, ML + i*(cardW+3), y, cardW, 27, c, PC));
+    y += 31;
+
+    // Secondary metrics row
+    const metas = [
+      ['Departments',         depts.length],
+      ['Suppliers',           sups.length],
+      ['SKUs Missing Cost',   unmatched],
+      ['Top Dept Margin',     depts.length ? pp(Math.max(...depts.map(d=>d.margin))) : '-'],
+      ['Top Dept Revenue',    depts[0]?.name.slice(0,18) || '-'],
+      ['Negative Margin SKUs',negItems.length],
+    ];
+    const mW = (CW - 10) / 3;
+    metas.forEach((m, i) => {
+      const r = Math.floor(i/3), c = i%3;
+      const mx = ML + c*(mW+5), my = y + r*13;
+      fc(...PC.offwht); doc.roundedRect(mx, my, mW, 10, 1.5,1.5,'F');
+      tc(...PC.textmd); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+      doc.text(ps(String(m[0] ?? '')), mx+4, my+4.2);
+      tc(...PC.brown); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+      doc.text(ps(String(m[1] ?? '-')), mx+mW-3, my+4.2, {align:'right'});
+    });
+    y += 30;
+
+    pdfSectionLabel(doc, 'Revenue vs COGS vs Profit by Department (Top 8)', y, ML, PC);
+    y += 7;
+    safeImg(doc, chart1, ML, y, CW, 82);
+    y += 86;
+
+    // ======== PAGE 3: DEPARTMENT ANALYSIS ========
+    doc.addPage();
+    y = pdfHeader(doc, 'DEPARTMENT ANALYSIS', W, ML, PC);
+
+    pdfSectionLabel(doc, 'Revenue Distribution by Department', y, ML, PC);
+    y += 7;
+    safeImg(doc, chart2, ML, y, CW, 68);
+    y += 72;
+
+    pdfSectionLabel(doc, 'Department Performance Summary', y, ML, PC);
+    y += 5;
+    doc.autoTable({
+      startY: y, margin: {left:ML, right:MR},
+      head: [['Department','SKUs','Total Qty','Revenue','COGS','Profit','Margin %']],
+      body: depts.map(d => cleanRow([
+        d.name, d.skus.toLocaleString('en'),
+        d.qty.toLocaleString('en',{maximumFractionDigits:0}),
+        pf(d.rev), pf(d.cogs), pf(d.profit), pp(d.margin),
+      ])),
+      headStyles: { fillColor:PC.brown, textColor:PC.white, fontSize:8, fontStyle:'bold', cellPadding:2.5 },
+      bodyStyles: { fontSize:7.5, cellPadding:2 },
+      alternateRowStyles: { fillColor:[247,250,248] },
+      columnStyles: {
+        0:{cellWidth:48}, 1:{cellWidth:13,halign:'right'},
+        2:{cellWidth:20,halign:'right'}, 3:{cellWidth:26,halign:'right'},
+        4:{cellWidth:24,halign:'right'}, 5:{cellWidth:24,halign:'right'},
+        6:{cellWidth:18,halign:'right'},
+      },
+      didParseCell(d) {
+        if (d.section==='body' && d.column.index===6) {
+          const v = parseFloat(d.cell.raw); if(v<0) d.cell.styles.textColor=[220,38,38]; else if(v>25) d.cell.styles.textColor=PC.green;
+        }
+        if (d.section==='body' && d.column.index===5) {
+          if(parseFloat(d.cell.raw)<0) d.cell.styles.textColor=[220,38,38];
+        }
+      },
+    });
+
+    // ======== PAGE 4: SUPPLIER ANALYSIS ========
+    doc.addPage();
+    y = pdfHeader(doc, 'SUPPLIER ANALYSIS', W, ML, PC);
+    pdfSectionLabel(doc, ps(`Top Suppliers by Revenue  (${Math.min(sups.length,20)} of ${sups.length} total)`), y, ML, PC);
+    y += 5;
+    doc.autoTable({
+      startY: y, margin: {left:ML, right:MR},
+      head: [['Supplier','Code','SKUs','Qty','Revenue','COGS','Profit','Margin %']],
+      body: sups.slice(0,20).map(s => cleanRow([
+        s.name.length>32 ? s.name.slice(0,32)+'...' : s.name, s.code,
+        s.skus.toLocaleString('en'), s.qty.toLocaleString('en',{maximumFractionDigits:0}),
+        pf(s.rev), pf(s.cogs), pf(s.profit), pp(s.margin),
+      ])),
+      headStyles: { fillColor:PC.forest, textColor:PC.white, fontSize:8, fontStyle:'bold', cellPadding:2.5 },
+      bodyStyles: { fontSize:7.5, cellPadding:2 },
+      alternateRowStyles: { fillColor:[247,250,248] },
+      columnStyles: {
+        0:{cellWidth:46}, 1:{cellWidth:22}, 2:{cellWidth:11,halign:'right'},
+        3:{cellWidth:18,halign:'right'}, 4:{cellWidth:24,halign:'right'},
+        5:{cellWidth:22,halign:'right'}, 6:{cellWidth:21,halign:'right'},
+        7:{cellWidth:16,halign:'right'},
+      },
+      didParseCell(d) {
+        if (d.section==='body' && d.column.index===7) {
+          const v=parseFloat(d.cell.raw); if(v<0) d.cell.styles.textColor=[220,38,38]; else if(v>25) d.cell.styles.textColor=PC.green;
+        }
+      },
+    });
+
+    // ======== PAGE 5: TOP SKUs BY REVENUE ========
+    doc.addPage();
+    y = pdfHeader(doc, 'TOP PERFORMING SKUs', W, ML, PC);
+    pdfSectionLabel(doc, 'Top 10 SKUs by Revenue', y, ML, PC);
+    y += 6;
+    safeImg(doc, chart3, ML, y, CW, 66);
+    y += 70;
+    doc.autoTable({
+      startY:y, margin:{left:ML,right:MR},
+      head:[['#','PLU Code','Description','Qty','Revenue','COGS','Profit','Margin %']],
+      body: top10Rev.map((r,i) => cleanRow([
+        i+1, r.plu, r.desc.length>32?r.desc.slice(0,32)+'...':r.desc,
+        r.qty.toLocaleString('en',{maximumFractionDigits:0}),
+        pf(r.amt), r.cogs!=null?pf(r.cogs):'-',
+        r.profit!=null?pf(r.profit):'-',
+        r.profit!=null&&r.amt>0?pp(r.profit/r.amt*100):'-',
+      ])),
+      headStyles:{fillColor:PC.teal, textColor:PC.white, fontSize:8, fontStyle:'bold', cellPadding:2},
+      bodyStyles:{fontSize:7.5, cellPadding:2},
+      alternateRowStyles:{fillColor:[247,250,248]},
+      columnStyles:{
+        0:{cellWidth:7,halign:'center'}, 1:{cellWidth:28}, 2:{cellWidth:52},
+        3:{cellWidth:15,halign:'right'}, 4:{cellWidth:22,halign:'right'},
+        5:{cellWidth:22,halign:'right'}, 6:{cellWidth:19,halign:'right'},
+        7:{cellWidth:15,halign:'right'},
+      },
+    });
+
+    // ======== PAGE 6: PROFIT ANALYSIS ========
+    doc.addPage();
+    y = pdfHeader(doc, 'PROFIT ANALYSIS BY SKU', W, ML, PC);
+
+    pdfSectionLabel(doc, 'Top 10 SKUs by Gross Profit', y, ML, PC);
+    y += 5;
+    doc.autoTable({
+      startY:y, margin:{left:ML,right:MR},
+      head:[['#','PLU Code','Description','Qty','Revenue','COGS','Profit','Margin %']],
+      body: top10Prof.map((r,i) => cleanRow([
+        i+1, r.plu, r.desc.length>32?r.desc.slice(0,32)+'...':r.desc,
+        r.qty.toLocaleString('en',{maximumFractionDigits:0}),
+        pf(r.amt), r.cogs!=null?pf(r.cogs):'-',
+        r.profit!=null?pf(r.profit):'-',
+        r.profit!=null&&r.amt>0?pp(r.profit/r.amt*100):'-',
+      ])),
+      headStyles:{fillColor:PC.teal, textColor:PC.white, fontSize:8, fontStyle:'bold', cellPadding:2},
+      bodyStyles:{fontSize:7.5, cellPadding:2},
+      alternateRowStyles:{fillColor:[247,250,248]},
+      columnStyles:{
+        0:{cellWidth:7,halign:'center'}, 1:{cellWidth:28}, 2:{cellWidth:52},
+        3:{cellWidth:15,halign:'right'}, 4:{cellWidth:22,halign:'right'},
+        5:{cellWidth:22,halign:'right'}, 6:{cellWidth:19,halign:'right'},
+        7:{cellWidth:15,halign:'right'},
+      },
+    });
+
+    y = finalY(y) + 10;
+    if (y > H - 60) { doc.addPage(); y = pdfHeader(doc, 'PROFIT ANALYSIS BY SKU (CONT.)', W, ML, PC); }
+
+    pdfSectionLabel(doc, 'Bottom 10 SKUs by Gross Profit - Needs Attention', y, ML, PC);
+    y += 5;
+    doc.autoTable({
+      startY:y, margin:{left:ML,right:MR},
+      head:[['#','PLU Code','Description','Qty','Revenue','COGS','Profit','Margin %']],
+      body: bot10Prof.map((r,i) => cleanRow([
+        i+1, r.plu, r.desc.length>32?r.desc.slice(0,32)+'...':r.desc,
+        r.qty.toLocaleString('en',{maximumFractionDigits:0}),
+        pf(r.amt), r.cogs!=null?pf(r.cogs):'-',
+        r.profit!=null?pf(r.profit):'-',
+        r.profit!=null&&r.amt>0?pp(r.profit/r.amt*100):'-',
+      ])),
+      headStyles:{fillColor:[185,55,55], textColor:PC.white, fontSize:8, fontStyle:'bold', cellPadding:2},
+      bodyStyles:{fontSize:7.5, cellPadding:2},
+      alternateRowStyles:{fillColor:[255,248,248]},
+      columnStyles:{
+        0:{cellWidth:7,halign:'center'}, 1:{cellWidth:28}, 2:{cellWidth:52},
+        3:{cellWidth:15,halign:'right'}, 4:{cellWidth:22,halign:'right'},
+        5:{cellWidth:22,halign:'right'}, 6:{cellWidth:19,halign:'right'},
+        7:{cellWidth:15,halign:'right'},
+      },
+      didParseCell(d) {
+        if (d.section==='body' && (d.column.index===6||d.column.index===7)) {
+          if(parseFloat(d.cell.raw)<0) d.cell.styles.textColor=[220,38,38];
+        }
+      },
+    });
+
+    // ======== PAGE 7: KEY INSIGHTS ========
+    doc.addPage();
+    y = pdfHeader(doc, 'KEY INSIGHTS & RECOMMENDATIONS', W, ML, PC);
+
+    const insights = buildInsights({data,totalRev,totalCOGS,totalProfit,grossMargin,totalQty,depts,sups,top10Rev,negItems,unmatched});
+    for (const ins of insights) {
+      const lines = doc.splitTextToSize(ps(ins.body), CW - 22);
+      const cardH = 12 + lines.length * 4.6;
+      if (y + cardH > H - 18) {
+        doc.addPage();
+        y = pdfHeader(doc, 'KEY INSIGHTS & RECOMMENDATIONS (CONT.)', W, ML, PC);
+      }
+      const bg  = ins.type==='positive'?[240,252,248]:ins.type==='warning'?[255,249,235]:ins.type==='negative'?[255,245,245]:[245,248,246];
+      const acc = ins.type==='positive'?PC.teal:ins.type==='warning'?[200,130,30]:ins.type==='negative'?PC.red:PC.forest;
+      fc(...bg);  doc.roundedRect(ML, y, CW, cardH, 2, 2, 'F');
+      fc(...acc); doc.rect(ML, y, 3, cardH, 'F');
+      tc(...acc); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+      doc.text(ps(ins.title), ML+6, y+7);
+      tc(...PC.textdk); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      lines.forEach((l, li) => doc.text(ps(l), ML+6, y+12+li*4.6));
+      y += cardH + 4;
+    }
+
+    // ======== FOOTERS ON ALL PAGES ========
+    const total = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= total; p++) {
+      doc.setPage(p);
+      fc(...PC.ltgrey); doc.rect(0, H-10, W, 10, 'F');
+      tc(...PC.textmd); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      doc.text('PLU Sales Summarizer - Confidential', ML, H-4);
+      doc.text(`Page ${p} of ${total}`, W/2, H-4, {align:'center'});
+      doc.text(new Date().toLocaleDateString(), W-ML, H-4, {align:'right'});
+    }
+
+    // ======== SAVE ========
+    const dp = from && to ? `${from}_to_${to}` : from ? `from_${from}` : to ? `to_${to}` : new Date().toISOString().slice(0,10);
+    doc.save(`Store_Performance_Report_${dp}.pdf`);
+    setStatus('Report downloaded successfully!');
+    setTimeout(() => { genDiv.style.display='none'; }, 2500);
+
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    showError(4, 'PDF generation failed: ' + err.message + (err.stack ? '\n' + err.stack.split('\n')[1] : ''));
+    genDiv.style.display = 'none';
+  }
+
+  btn.disabled = false;
+}
+
+// ---- PDF layout helpers ----
+function pdfHeader(doc, title, W, ML, PC) {
+  doc.setFillColor(...PC.brown);  doc.rect(0, 0, W, 19, 'F');
+  doc.setFillColor(...PC.teal);   doc.rect(0, 19, W, 1.5, 'F');
+  doc.setTextColor(...PC.white);  doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(ps(title), ML, 13);
+  doc.setTextColor(...PC.mintlt); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+  doc.text('PLU Sales Performance Report', W-ML, 13, {align:'right'});
+  return 27;
+}
+
+function pdfSectionLabel(doc, text, y, ML, PC) {
+  doc.setFillColor(...PC.mint); doc.rect(ML, y, 3, 5.5, 'F');
+  doc.setTextColor(...PC.forest); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+  doc.text(ps(text), ML+6, y+4);
+}
+
+function pdfKpiCard(doc, x, y, w, h, card, PC) {
+  doc.setFillColor(...card.col); doc.roundedRect(x, y, w, h, 2, 2, 'F');
+  doc.setTextColor(...PC.brown);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.text(ps(card.label || ''), x+w/2, y+6.5, {align:'center'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(ps(card.val   || ''), x+w/2, y+15,  {align:'center'});
+  if (card.sub) {
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.5);
+    doc.text(ps(card.sub), x+w/2, y+21, {align:'center'});
+  }
+}
+
+// ---- Insights engine ----
+function buildInsights({data,totalRev,totalCOGS,totalProfit,grossMargin,totalQty,depts,sups,top10Rev,negItems,unmatched}) {
+  const ins = [];
+  const trunc = (s,n) => ps(s.length>n ? s.slice(0,n)+'...' : s);
+
+  // 1. Overall margin
+  ins.push({
+    type: grossMargin>=20?'positive':grossMargin>=5?'warning':'negative',
+    title: `Overall Gross Margin: ${grossMargin.toFixed(1)}%`,
+    body: `The store generated a gross profit of ${pf(totalProfit)} on total revenue of ${pf(totalRev)}, yielding a gross margin of ${grossMargin.toFixed(1)}%. ${grossMargin>=20?'This is a healthy margin, exceeding the 20% retail benchmark. Focus on maintaining current pricing and volume.':grossMargin>=5?'This is a moderate margin. Opportunities exist to improve profitability by renegotiating supplier costs or adjusting pricing on low-margin categories.':'This is below the typical retail threshold of 5–20%. An immediate review of pricing strategies and cost structures across all departments is strongly recommended.'}`,
+  });
+
+  // 2. Best revenue dept
+  if (depts.length>0) {
+    const d=depts[0];
+    ins.push({
+      type:'positive',
+      title:`Top Revenue Department: ${d.name}`,
+      body:`${d.name} leads all departments with ${pf(d.rev)} in revenue (${(d.rev/totalRev*100).toFixed(1)}% of store total) across ${d.skus} SKUs at a gross margin of ${d.margin.toFixed(1)}%. Prioritising stock availability and promotions in this category will have the greatest impact on overall revenue.`,
+    });
+  }
+
+  // 3. Highest margin dept (if notably above average)
+  const bestMDept = [...depts].sort((a,b)=>b.margin-a.margin)[0];
+  if (bestMDept && bestMDept.margin > grossMargin+8) {
+    ins.push({
+      type:'positive',
+      title:`Highest Margin Department: ${bestMDept.name} at ${bestMDept.margin.toFixed(1)}%`,
+      body:`${bestMDept.name} achieves the highest gross margin at ${bestMDept.margin.toFixed(1)}%, which is ${(bestMDept.margin-grossMargin).toFixed(1)} percentage points above the store average. Consider expanding the product range in this department to capture more of this high-margin opportunity.`,
+    });
+  }
+
+  // 4. Lowest margin dept
+  const worstMDept = [...depts].sort((a,b)=>a.margin-b.margin)[0];
+  if (worstMDept && worstMDept.margin < grossMargin-8) {
+    ins.push({
+      type: worstMDept.margin<0?'negative':'warning',
+      title:`Low Margin Department: ${worstMDept.name} at ${worstMDept.margin.toFixed(1)}%`,
+      body:`${worstMDept.name} is the lowest margin department at ${worstMDept.margin.toFixed(1)}%, which is ${(grossMargin-worstMDept.margin).toFixed(1)} percentage points below the store average. ${worstMDept.margin<0?'This department is currently operating at a net loss.':'Review unit costs with suppliers and evaluate whether pricing adjustments are feasible without reducing sales volume.'}`,
+    });
+  }
+
+  // 5. Negative margin items
+  if (negItems.length>0) {
+    const loss = Math.abs(negItems.reduce((a,r)=>a+(r.profit??0),0));
+    ins.push({
+      type:'negative',
+      title:`${negItems.length} SKU${negItems.length>1?'s':''} Sold Below Cost — Total Loss: ${pf(loss)}`,
+      body:`${negItems.length} SKUs were sold at prices below their unit cost, creating a combined loss of ${pf(loss)}. Top items: ${negItems.slice(0,3).map(r=>trunc(r.desc,25)).join(', ')}. These items require immediate price correction or should be discontinued to prevent ongoing losses.`,
+    });
+  }
+
+  // 6. Revenue concentration
+  const top3Rev = top10Rev.slice(0,3).reduce((a,r)=>a+r.amt,0);
+  const top3Pct = totalRev>0?top3Rev/totalRev*100:0;
+  if (top3Pct>20) {
+    ins.push({
+      type:'warning',
+      title:`Revenue Concentration: Top 3 SKUs = ${top3Pct.toFixed(1)}% of Total Revenue`,
+      body:`The top 3 SKUs contribute ${top3Pct.toFixed(1)}% of all revenue. This concentration poses a supply and demand risk — any disruption to these products will have a disproportionate effect on overall store performance. Broadening the best-selling product mix is advised.`,
+    });
+  }
+
+  // 7. Top supplier
+  if (sups.length>0) {
+    const s=sups[0];
+    ins.push({
+      type:'info',
+      title:`Largest Supplier: ${trunc(s.name,42)}`,
+      body:`${trunc(s.name,50)} is the top supplier, accounting for ${pf(s.rev)} in revenue (${(s.rev/totalRev*100).toFixed(1)}% of total) across ${s.skus} SKUs with a margin of ${s.margin.toFixed(1)}%. Negotiating improved terms or volume discounts with this supplier could meaningfully improve overall store margins.`,
+    });
+  }
+
+  // 8. Best single SKU
+  if (top10Rev.length>0) {
+    const r=top10Rev[0];
+    ins.push({
+      type:'positive',
+      title:`Best Selling SKU: ${trunc(r.desc,42)}`,
+      body:`${trunc(r.desc,55)} is the top revenue product with ${pf(r.amt)} in sales and ${r.qty.toLocaleString('en')} units sold.${r.profit!=null?' It generates a profit of '+pf(r.profit)+' ('+pp(r.profit/r.amt*100)+' margin)':''} Ensure consistent stock levels for this item to avoid lost sales.`,
+    });
+  }
+
+  // 9. Unmatched SKUs
+  if (unmatched>0) {
+    const unmatchedRev = data.filter(r=>!r.matched).reduce((a,r)=>a+r.amt,0);
+    ins.push({
+      type:'warning',
+      title:`${unmatched} SKU${unmatched>1?'s':''} Not Found in SKU Master List`,
+      body:`${unmatched} SKUs in the sales data have no matching cost record, representing ${pf(unmatchedRev)} in revenue where profit cannot be calculated. Update the SKU master list to include these products so margin analysis is complete and accurate.`,
+    });
+  }
+
+  return ins;
+}
+</script>
+</body>
+</html>
