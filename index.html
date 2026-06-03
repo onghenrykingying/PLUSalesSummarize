@@ -3044,26 +3044,129 @@ function updateAIBriefStatus() {
     const rev = data.reduce((a,r)=>a+r.amt,0);
     wrap.innerHTML = `
       <div class="brief-status ready">
-        
         <div><strong>Step 4 data loaded — ${data.length.toLocaleString()} SKUs</strong>
-        Revenue: ${rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} — briefs generated below.</div>
+        Revenue: ${rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} — briefs generated from your data.</div>
       </div>`;
     generateAllBriefs(data);
   } else {
     wrap.innerHTML = `
       <div class="brief-status missing">
-        
-        <div><strong>No data yet</strong>Complete Step 4 (Profit Analysis) first, then return here to generate your AI briefs.</div>
+        <div><strong>No Step 4 data yet — showing prompt templates</strong>
+        Complete Step 4 first to auto-fill with your real numbers. You can also copy a template below and fill in your own values before pasting into AI.</div>
       </div>`;
-    ['brief1-text','brief2-text','brief3-text'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    ['brief1-tokens','brief2-tokens','brief3-tokens'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '';
-    });
+    generateTemplateBriefs();
   }
+}
+
+function generateTemplateBriefs() {
+  function setB(id, tokId, text) {
+    const el = document.getElementById(id);
+    if (el) el.value = text;
+    const tok = document.getElementById(tokId);
+    if (tok) tok.textContent = '';
+  }
+
+  setB('brief1-text', 'brief1-tokens', [
+    `STORE PERFORMANCE SNAPSHOT`,
+    ``,
+    `Revenue: $[total_revenue]  |  COGS: $[total_cogs]  |  Gross Profit: $[gross_profit]  |  Margin: [margin]%`,
+    `Units Sold: [total_units]  |  Active SKUs: [sku_count]  |  Departments: [dept_count]  |  Suppliers: [supplier_count]`,
+    ``,
+    `TOP DEPARTMENTS`,
+    `1. [Department name] — $[revenue] ([margin]% margin)`,
+    `2. [Department name] — $[revenue] ([margin]% margin)`,
+    `3. [Department name] — $[revenue] ([margin]% margin)`,
+    ``,
+    `TOP 5 PRODUCTS BY REVENUE`,
+    `1. [Product name] — $[revenue]`,
+    `2. [Product name] — $[revenue]`,
+    `3. [Product name] — $[revenue]`,
+    `4. [Product name] — $[revenue]`,
+    `5. [Product name] — $[revenue]`,
+    ``,
+    `ALERTS`,
+    `[e.g. 5 SKUs sold below cost — combined loss: $1,200]`,
+    `[e.g. 38 non-moving SKUs in master list]`,
+  ].join('\n'));
+
+  setB('brief2-text', 'brief2-tokens', [
+    `MONTHLY STORE PERFORMANCE REVIEW`,
+    `${'─'.repeat(50)}`,
+    ``,
+    `EXECUTIVE SUMMARY`,
+    `Total Revenue:  $[total_revenue]`,
+    `Total COGS:     $[total_cogs]`,
+    `Gross Profit:   $[gross_profit]`,
+    `Gross Margin:   [margin]%`,
+    `Units Sold:     [total_units]`,
+    `Active SKUs:    [sku_count]`,
+    ``,
+    `DEPARTMENT PERFORMANCE`,
+    `  [Department 1]              Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%`,
+    `  [Department 2]              Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%`,
+    `  [Department 3]              Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%`,
+    `  [Department 4]              Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%`,
+    `  [Department 5]              Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%`,
+    ``,
+    `TOP 10 PRODUCTS BY REVENUE`,
+    ` 1. [Product]                              $[revenue]    margin: [margin]%`,
+    ` 2. [Product]                              $[revenue]    margin: [margin]%`,
+    ` 3. [Product]                              $[revenue]    margin: [margin]%`,
+    `  ... (fill in remaining 7)`,
+    ``,
+    `ITEMS REQUIRING ATTENTION`,
+    `  [Count] SKU(s) sold below cost — total loss: $[amount]`,
+    `    • [Product name] (loss: $[amount])`,
+    `    • [Product name] (loss: $[amount])`,
+    ``,
+    `  Non-moving SKUs: [count] items with zero sales`,
+    ``,
+    `TOP SUPPLIER`,
+    `  [Supplier name] — $[revenue] revenue, [margin]% margin, [sku_count] SKUs`,
+  ].join('\n'));
+
+  setB('brief3-text', 'brief3-tokens', [
+    `FULL STORE P&L — DEEP DIVE ANALYSIS`,
+    `${'═'.repeat(52)}`,
+    ``,
+    `KEY METRICS`,
+    `  Revenue:         $[total_revenue]`,
+    `  COGS:            $[total_cogs]`,
+    `  Gross Profit:    $[gross_profit]`,
+    `  Gross Margin:    [margin]%`,
+    `  Units Sold:      [total_units]`,
+    `  Active SKUs:     [sku_count]`,
+    `  Departments:     [dept_count]`,
+    `  Suppliers:       [supplier_count]`,
+    `  SKUs below cost: [count]`,
+    `  Non-moving SKUs: [count]`,
+    ``,
+    `ALL DEPARTMENTS`,
+    `  [Department]                   Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%    SKUs: [count]`,
+    `  [Department]                   Rev: $[revenue]    Profit: $[profit]    Margin: [margin]%    SKUs: [count]`,
+    `  ... (fill in all departments)`,
+    ``,
+    `TOP 10 BY REVENUE`,
+    `   1. [[PLU]] [Product]                     $[revenue]    margin: [margin]%`,
+    `   2. [[PLU]] [Product]                     $[revenue]    margin: [margin]%`,
+    `  ... (fill in remaining 8)`,
+    ``,
+    `TOP 10 BY GROSS PROFIT`,
+    `   1. [[PLU]] [Product]    profit: $[profit]    margin: [margin]%`,
+    `  ... (fill in remaining 9)`,
+    ``,
+    `BOTTOM 10 BY GROSS PROFIT (needs attention)`,
+    `   1. [[PLU]] [Product]    profit: $[profit]    margin: [margin]%`,
+    `  ... (fill in remaining 9)`,
+    ``,
+    `ITEMS SOLD BELOW COST`,
+    `  • [[PLU]] [Product] — sold: $[revenue]  cost: $[cogs]  loss: $[loss]`,
+    `  ... (fill in all loss items)`,
+    ``,
+    `TOP 10 SUPPLIERS BY REVENUE`,
+    `   1. [Supplier]                $[revenue]    profit: $[profit]    margin: [margin]%    SKUs: [count]`,
+    `  ... (fill in remaining 9)`,
+  ].join('\n'));
 }
 
 function generateAllBriefs(data) {
@@ -3349,7 +3452,7 @@ function buildInsights({data,totalRev,totalCOGS,totalProfit,grossMargin,totalQty
         <div class="brief-card-desc">Top-line KPIs and one-line alerts. Best for a fast daily check-in with AI.</div>
       </div>
       <div class="brief-card-body">
-        <textarea class="brief-preview" id="brief1-text" readonly placeholder="Generate data in Step 4 first…"></textarea>
+        <textarea class="brief-preview" id="brief1-text" readonly></textarea>
         <div class="brief-actions">
           <button class="copy-btn" id="copy-btn1" onclick="copyBrief(1)">Copy</button>
           <span class="brief-tokens" id="brief1-tokens"></span>
@@ -3365,7 +3468,7 @@ function buildInsights({data,totalRev,totalCOGS,totalProfit,grossMargin,totalQty
         <div class="brief-card-desc">Sectioned by department, supplier, and top performers. Best for weekly or monthly AI analysis.</div>
       </div>
       <div class="brief-card-body">
-        <textarea class="brief-preview" id="brief2-text" readonly placeholder="Generate data in Step 4 first…"></textarea>
+        <textarea class="brief-preview" id="brief2-text" readonly></textarea>
         <div class="brief-actions">
           <button class="copy-btn" id="copy-btn2" onclick="copyBrief(2)">Copy</button>
           <span class="brief-tokens" id="brief2-tokens"></span>
@@ -3381,7 +3484,7 @@ function buildInsights({data,totalRev,totalCOGS,totalProfit,grossMargin,totalQty
         <div class="brief-card-desc">Complete P&amp;L with top/bottom SKUs, loss items, ABC breakdown, and supplier list. Best for strategic planning.</div>
       </div>
       <div class="brief-card-body">
-        <textarea class="brief-preview" id="brief3-text" readonly placeholder="Generate data in Step 4 first…"></textarea>
+        <textarea class="brief-preview" id="brief3-text" readonly></textarea>
         <div class="brief-actions">
           <button class="copy-btn" id="copy-btn3" onclick="copyBrief(3)">Copy</button>
           <span class="brief-tokens" id="brief3-tokens"></span>
