@@ -541,6 +541,23 @@
       color: #991B1B; border-radius: 8px;
       padding: 10px 15px; font-size: 0.82rem; white-space: pre-line;
     }
+    /* Data Quality panel */
+    .dq-panel { display: none; margin-top: 18px; background: white; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .dq-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 18px; border-bottom: 1px solid #eef0f2; flex-wrap: wrap; }
+    .dq-head strong { font-size: 0.9rem; color: #1C1917; }
+    .dq-actions { display: flex; gap: 8px; }
+    .dq-actions .btn { padding: 7px 13px; font-size: 0.78rem; }
+    .btn-secondary { background: #F5F5F4; color: #44403C; border: 1.5px solid #e2e8f0; }
+    .btn-secondary:hover:not(:disabled) { background: #ECECEA; }
+    .dq-table { width: 100%; border-collapse: collapse; }
+    .dq-table th, .dq-table td { padding: 9px 18px; text-align: left; font-size: 0.82rem; border-bottom: 1px solid #f1f1f0; }
+    .dq-table th { background: #FAFAF9; color: #78716C; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; }
+    .dq-table td.count { text-align: right; font-weight: 700; color: #1C1917; }
+    .dq-ok { padding: 16px 18px; font-size: 0.85rem; color: #16A34A; font-weight: 600; }
+    .sev { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .sev-blocker { background: #FEE2E2; color: #B91C1C; }
+    .sev-warning { background: #FEF3C7; color: #92610A; }
+    .sev-info    { background: #E0F2FE; color: #075985; }
   </style>
 </head>
 <body>
@@ -568,7 +585,7 @@
       </div>
       <div class="step-item" data-page="page3">
         <div class="step-dot">4</div>
-        <div class="step-lbl">P&amp;L</div>
+        <div class="step-lbl">Re-price</div>
       </div>
     </div>
   </nav>
@@ -613,7 +630,7 @@
       <div class="home-card-accent" style="background:#78350F;"></div>
       <div class="home-card-body">
         <div class="home-card-step" style="color:#78350F;">Step 4</div>
-        <div class="home-card-title">Profit Analysis</div>
+        <div class="home-card-title">Re-price P&amp;L</div>
       </div>
     </div>
 
@@ -652,6 +669,12 @@
   <div id="clean-col-status" style="display:none; margin-top:14px; background:white; border:1.5px solid #e2e8f0; border-radius:10px; padding:14px 18px;">
     <div style="font-size:0.82rem; font-weight:700; color:#475569; margin-bottom:6px;">Detected columns</div>
     <div class="col-pills" id="clean-col-pills"></div>
+  </div>
+
+  <div class="date-range" style="margin-top:14px;">
+    <label>List version date</label>
+    <input type="date" id="date-clean" />
+    <span class="date-range-hint">Used in exported file name (e.g. 2026-05-01 SKU-List.xlsx)</span>
   </div>
 
   <!-- Controls -->
@@ -721,18 +744,45 @@
 
   <div class="page-title">
     <h2>Step 2 — Weekly Summary</h2>
-    <p>Upload your raw daily/weekly sales Excel reports. All files will be aggregated into one consolidated SKU summary.</p>
+    <p>Upload your raw daily/weekly sales reports <strong>and the SKU data list</strong> for this week. Sales are aggregated and priced from the SKU list to produce a full P&amp;L.</p>
   </div>
 
-  <div class="upload-zone" id="drop1">
-    <input type="file" id="file-input1" accept=".csv,.xls,.xlsx" multiple />
-    
-    <h3>Drop Excel files here, or click to browse</h3>
-    <p>Supports .csv, .xls and .xlsx &nbsp;|&nbsp; Multiple files allowed</p>
+  <div class="upload-grid">
+    <!-- Raw weekly sales files (multiple) -->
+    <div class="upload-panel">
+      <h4>Weekly Sales Files <span style="font-weight:400;color:#78716C;font-size:0.78rem;">raw daily/weekly POS exports — multiple .csv/.xls/.xlsx</span></h4>
+      <div class="upload-zone" id="drop1">
+        <input type="file" id="file-input1" accept=".csv,.xls,.xlsx" multiple />
+        <h3>Drop Excel files here</h3>
+        <p>Multiple files allowed</p>
+      </div>
+      <div class="file-list" id="file-list1"></div>
+    </div>
+
+    <!-- SKU data list (single, required) -->
+    <div class="upload-panel">
+      <h4>SKU Data List <span style="font-weight:400;color:#78716C;font-size:0.78rem;">prices for this week — one .csv/.xlsx (required)</span></h4>
+      <div class="upload-zone" id="drop1sku">
+        <input type="file" id="file-input1sku" accept=".csv,.xls,.xlsx" />
+        <h3>Drop SKU list here</h3>
+        <p>.csv or .xlsx — one file</p>
+      </div>
+      <div class="file-list" id="file-list1sku"></div>
+    </div>
   </div>
 
   <div class="date-range">
     <label>Date Range</label>
+    <select class="date-preset" id="date-preset1" style="font-size:0.8rem;padding:6px 9px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;color:#44403C;cursor:pointer;">
+      <option value="">Quick range…</option>
+      <option value="this-week">This week</option>
+      <option value="last-week">Last week</option>
+      <option value="this-month">This month</option>
+      <option value="last-month">Last month</option>
+      <option value="last-7">Last 7 days</option>
+      <option value="last-30">Last 30 days</option>
+      <option value="ytd">Year to date</option>
+    </select>
     <label for="date-from1">From</label>
     <input type="date" id="date-from1" />
     <span class="sep">→</span>
@@ -741,7 +791,6 @@
     <span class="date-range-hint">Used in exported file name</span>
   </div>
 
-  <div class="file-list" id="file-list1"></div>
   <div class="error-box" id="error1"></div>
 
   <div class="controls">
@@ -762,9 +811,6 @@
   </div>
 
   <div class="stats" id="stats1">
-    <div class="stat-card"><label>Files Processed</label><span id="s1-files">0</span></div>
-    <div class="stat-card"><label>Unique SKUs</label><span id="s1-skus">0</span></div>
-    <div class="stat-card green"><label>Total Qty Sold</label><span id="s1-qty">0</span></div>
     <div class="stat-card orange"><label>Total Amount</label><span id="s1-amt">0.00</span></div>
   </div>
 
@@ -793,6 +839,114 @@
     </div>
   </div>
 
+  <!-- Data Quality -->
+  <div class="dq-panel" id="dq1">
+    <div class="dq-head">
+      <strong id="dq1-title">Data Quality</strong>
+      <div class="dq-actions">
+        <button class="btn btn-success" id="dq1-xlsx">Export Issues (Excel)</button>
+        <button class="btn btn-secondary" id="dq1-csv">CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="dq-table">
+        <thead><tr><th>Severity</th><th>Issue</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody id="dq1-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="preview-tabs" id="preview-tabs1" style="display:none;">
+    <div class="preview-tab-bar">
+      <button class="preview-tab-btn active" data-pane="pane1-prim">P&amp;L · SKU List Price</button>
+      <button class="preview-tab-btn"        data-pane="pane1-dev">Realized &amp; Deviation</button>
+      <button class="preview-tab-btn"        data-pane="pane1-non">Non-Moving SKUs</button>
+    </div>
+
+    <!-- Pane 1 (PRIMARY): SKU List Price P&L -->
+    <div class="preview-pane active table-wrap" id="pane1-prim" style="display:block;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Profit &amp; Loss — priced from SKU list (Unit Cost &amp; Sell Price)</h3>
+        <span class="row-count" id="rc-1p"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="1p" data-col="plu">PLU Code <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="abc">ABC <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="sell_price">Sell Price <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="cogs">COGS <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="list_revenue">Revenue <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="list_profit" class="sorted">Profit <span class="sort-icon">↓</span></th>
+            <th data-page="1p" data-col="list_margin">Margin % <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="list_sales_mix">Sales Mix % <span class="sort-icon">↕</span></th>
+            <th data-page="1p" data-col="list_profit_contrib">Profit Contrib % <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-1p"></tbody>
+          <tfoot id="tfoot-1p"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 2 (SECONDARY): Realized price + deviation -->
+    <div class="preview-pane table-wrap" id="pane1-dev" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Realized price (Amount ÷ Qty) &amp; deviation from SKU list price</h3>
+        <span class="row-count" id="rc-1d"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="1d" data-col="plu">PLU Code <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="sell_price">Sell Price · List <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="avg_price">Avg Price · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="price_dev">Price Dev <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="list_revenue">Revenue · List <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="amt">Revenue · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="list_profit">Profit · List <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="profit">Profit · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="1d" data-col="variance" class="sorted">Profit Variance <span class="sort-icon">↑</span></th>
+            <th data-page="1d" data-col="margin">Realized Margin % <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-1d"></tbody>
+          <tfoot id="tfoot-1d"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 3: Non-Moving SKUs -->
+    <div class="preview-pane table-wrap" id="pane1-non" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Non-Moving SKUs</h3>
+        <span class="row-count" id="rc-1n"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="1n" data-col="plu" class="sorted">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="1n" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
+            <th data-page="1n" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-1n"></tbody>
+          <tfoot id="tfoot-1n"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div><!-- /preview-tabs1 -->
+
 </div><!-- /page1 -->
 
 <!-- ==================== PAGE 2 : MONTHLY SUMMARY ==================== -->
@@ -800,18 +954,27 @@
 
   <div class="page-title">
     <h2>Step 3 — Monthly Summary</h2>
-    <p>Upload your weekly summary Excel files (exported from Step 2). All weeks will be combined into one monthly SKU summary.</p>
+    <p>Upload the weekly <strong>P&amp;L Analysis</strong> files exported from the Weekly step. All weeks are aggregated into one monthly P&amp;L (no SKU list needed).</p>
   </div>
 
   <div class="upload-zone" id="drop2">
     <input type="file" id="file-input2" accept=".csv,.xls,.xlsx" multiple />
-    
-    <h3>Drop weekly summary files here, or click to browse</h3>
-    <p>Supports .csv, .xls and .xlsx &nbsp;|&nbsp; Multiple files allowed</p>
+    <h3>Drop weekly P&amp;L export files here, or click to browse</h3>
+    <p>The P&amp;L Analysis files exported from the Weekly step &nbsp;|&nbsp; Multiple files allowed</p>
   </div>
 
   <div class="date-range">
     <label>Date Range</label>
+    <select class="date-preset" id="date-preset2" style="font-size:0.8rem;padding:6px 9px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;color:#44403C;cursor:pointer;">
+      <option value="">Quick range…</option>
+      <option value="this-week">This week</option>
+      <option value="last-week">Last week</option>
+      <option value="this-month">This month</option>
+      <option value="last-month">Last month</option>
+      <option value="last-7">Last 7 days</option>
+      <option value="last-30">Last 30 days</option>
+      <option value="ytd">Year to date</option>
+    </select>
     <label for="date-from2">From</label>
     <input type="date" id="date-from2" />
     <span class="sep">→</span>
@@ -841,9 +1004,6 @@
   </div>
 
   <div class="stats" id="stats2">
-    <div class="stat-card"><label>Files Processed</label><span id="s2-files">0</span></div>
-    <div class="stat-card"><label>Unique SKUs</label><span id="s2-skus">0</span></div>
-    <div class="stat-card green"><label>Total Qty Sold</label><span id="s2-qty">0</span></div>
     <div class="stat-card orange"><label>Total Amount</label><span id="s2-amt">0.00</span></div>
   </div>
 
@@ -872,41 +1032,149 @@
     </div>
   </div>
 
+  <!-- Data Quality -->
+  <div class="dq-panel" id="dq2">
+    <div class="dq-head">
+      <strong id="dq2-title">Data Quality</strong>
+      <div class="dq-actions">
+        <button class="btn btn-success" id="dq2-xlsx">Export Issues (Excel)</button>
+        <button class="btn btn-secondary" id="dq2-csv">CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="dq-table">
+        <thead><tr><th>Severity</th><th>Issue</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody id="dq2-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="preview-tabs" id="preview-tabs2" style="display:none;">
+    <div class="preview-tab-bar">
+      <button class="preview-tab-btn active" data-pane="pane2-prim">P&amp;L · SKU List Price</button>
+      <button class="preview-tab-btn"        data-pane="pane2-dev">Realized &amp; Deviation</button>
+      <button class="preview-tab-btn"        data-pane="pane2-non">Non-Moving SKUs</button>
+    </div>
+
+    <!-- Pane 1 (PRIMARY): SKU List Price P&L -->
+    <div class="preview-pane active table-wrap" id="pane2-prim" style="display:block;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Profit &amp; Loss — priced from SKU list (Unit Cost &amp; Sell Price)</h3>
+        <span class="row-count" id="rc-2p"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="2p" data-col="plu">PLU Code <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="abc">ABC <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="sell_price">Sell Price <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="cogs">COGS <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="list_revenue">Revenue <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="list_profit" class="sorted">Profit <span class="sort-icon">↓</span></th>
+            <th data-page="2p" data-col="list_margin">Margin % <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="list_sales_mix">Sales Mix % <span class="sort-icon">↕</span></th>
+            <th data-page="2p" data-col="list_profit_contrib">Profit Contrib % <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-2p"></tbody>
+          <tfoot id="tfoot-2p"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 2 (SECONDARY): Realized price + deviation -->
+    <div class="preview-pane table-wrap" id="pane2-dev" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Realized price (Amount ÷ Qty) &amp; deviation from SKU list price</h3>
+        <span class="row-count" id="rc-2d"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="2d" data-col="plu">PLU Code <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="sell_price">Sell Price · List <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="avg_price">Avg Price · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="price_dev">Price Dev <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="list_revenue">Revenue · List <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="amt">Revenue · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="list_profit">Profit · List <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="profit">Profit · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="2d" data-col="variance" class="sorted">Profit Variance <span class="sort-icon">↑</span></th>
+            <th data-page="2d" data-col="margin">Realized Margin % <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-2d"></tbody>
+          <tfoot id="tfoot-2d"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 3: Non-Moving SKUs -->
+    <div class="preview-pane table-wrap" id="pane2-non" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Non-Moving SKUs</h3>
+        <span class="row-count" id="rc-2n"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="2n" data-col="plu" class="sorted">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="2n" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
+            <th data-page="2n" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-2n"></tbody>
+          <tfoot id="tfoot-2n"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div><!-- /preview-tabs2 -->
+
 </div><!-- /page2 -->
 
 <!-- ==================== PAGE 3 : PROFIT ANALYSIS ==================== -->
 <div class="page" id="page3">
 
   <div class="page-title">
-    <h2>Step 4 — Profit Analysis</h2>
-    <p>Upload your clean SKU list (exported from Step 1) and the monthly summary (from Step 3) to generate a full P&amp;L breakdown per SKU.</p>
+    <h2>Step 4 — Re-price P&amp;L <span style="font-weight:400;color:#78716C;font-size:0.9rem;">optional</span></h2>
+    <p>Apply an <strong>updated SKU list</strong> to a month's sales to recompute the P&amp;L at new prices — a "what-if" on top of Step 3. The <em>Realized &amp; Deviation</em> tab then shows how the new prices compare to what actually sold. (Step 3 already gives you the month's P&amp;L at the original prices; use this only when prices changed or you want to test new ones.)</p>
   </div>
 
   <!-- Two upload panels side by side -->
   <div class="upload-grid">
 
-    <!-- Panel A: SKU List -->
+    <!-- Panel B: Month's Sales (left) -->
     <div class="upload-panel">
-      <h4>SKU Master List <span style="font-weight:400;color:#78716C;font-size:0.78rem;">Step 1 export (.csv or .xlsx)</span></h4>
-      <div class="upload-zone" id="drop3a">
-        <input type="file" id="file-input3a" accept=".csv,.xls,.xlsx" />
-        
-        <h3>Drop SKU list here</h3>
-        <p>.csv or .xlsx — one file</p>
-      </div>
-      <div class="file-list" id="file-list3a"></div>
-    </div>
-
-    <!-- Panel B: Monthly Summary -->
-    <div class="upload-panel">
-      <h4>Monthly Summary <span style="font-weight:400;color:#78716C;font-size:0.78rem;">from Step 3</span></h4>
+      <h4>Month's Sales <span style="font-weight:400;color:#78716C;font-size:0.78rem;">Step 3 Monthly P&amp;L, or any monthly summary (.csv/.xls/.xlsx)</span></h4>
       <div class="upload-zone" id="drop3b">
         <input type="file" id="file-input3b" accept=".csv,.xls,.xlsx" />
-        
-        <h3>Drop monthly summary here</h3>
+
+        <h3>Drop the month's sales here</h3>
         <p>.csv, .xls or .xlsx — one file</p>
       </div>
       <div class="file-list" id="file-list3b"></div>
+    </div>
+
+    <!-- Panel A: Updated SKU List (right) -->
+    <div class="upload-panel">
+      <h4>Updated SKU List <span style="font-weight:400;color:#78716C;font-size:0.78rem;">the new / different prices to apply (.csv or .xlsx)</span></h4>
+      <div class="upload-zone" id="drop3a">
+        <input type="file" id="file-input3a" accept=".csv,.xls,.xlsx" />
+
+        <h3>Drop updated SKU list here</h3>
+        <p>.csv or .xlsx — one file</p>
+      </div>
+      <div class="file-list" id="file-list3a"></div>
     </div>
 
   </div><!-- /upload-grid -->
@@ -914,6 +1182,16 @@
   <!-- Date range -->
   <div class="date-range">
     <label>Date Range</label>
+    <select class="date-preset" id="date-preset3" style="font-size:0.8rem;padding:6px 9px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;color:#44403C;cursor:pointer;">
+      <option value="">Quick range…</option>
+      <option value="this-week">This week</option>
+      <option value="last-week">Last week</option>
+      <option value="this-month">This month</option>
+      <option value="last-month">Last month</option>
+      <option value="last-7">Last 7 days</option>
+      <option value="last-30">Last 30 days</option>
+      <option value="ytd">Year to date</option>
+    </select>
     <label for="date-from3">From</label>
     <input type="date" id="date-from3" />
     <span class="sep">→</span>
@@ -925,7 +1203,7 @@
   <div class="error-box" id="error3"></div>
 
   <div class="controls">
-    <button class="btn btn-primary" id="btn-process3" disabled>Generate P&amp;L Report</button>
+    <button class="btn btn-primary" id="btn-process3" disabled>Re-price &amp; Analyze</button>
     <div class="format-toggle">
       <input type="radio" name="fmt-step3" id="fmt-step3-xlsx" value="xlsx" checked />
       <label for="fmt-step3-xlsx">Excel</label>
@@ -943,77 +1221,113 @@
 
   <!-- Stats -->
   <div class="stats" id="stats3">
-    <div class="stat-card"><label>Matched SKUs</label><span id="s3-matched">0</span></div>
-    <div class="stat-card"><label>Unmatched SKUs</label><span id="s3-unmatched">0</span></div>
-    <div class="stat-card green"><label>Total Revenue</label><span id="s3-revenue">0.00</span></div>
-    <div class="stat-card"><label>Total COGS</label><span id="s3-cogs">0.00</span></div>
-    <div class="stat-card orange"><label>Total Profit</label><span id="s3-profit">0.00</span></div>
+    <div class="stat-card orange"><label>Total Amount</label><span id="s3-amt">0.00</span></div>
   </div>
 
-  <!-- Preview tables with two tabs -->
+  <!-- Data Quality -->
+  <div class="dq-panel" id="dq3">
+    <div class="dq-head">
+      <strong id="dq3-title">Data Quality</strong>
+      <div class="dq-actions">
+        <button class="btn btn-success" id="dq3-xlsx">Export Issues (Excel)</button>
+        <button class="btn btn-secondary" id="dq3-csv">CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="dq-table">
+        <thead><tr><th>Severity</th><th>Issue</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody id="dq3-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Preview tables: SKU-list P&L (primary) + Realized/Deviation + Non-Moving -->
   <div class="preview-tabs" id="preview-tabs3">
     <div class="preview-tab-bar">
-      <button class="preview-tab-btn active" data-pane="pane3-sales">Sales &amp; COGS</button>
-      <button class="preview-tab-btn"        data-pane="pane3-profit">Non-Moving SKUs</button>
+      <button class="preview-tab-btn active" data-pane="pane3-prim">P&amp;L · SKU List Price</button>
+      <button class="preview-tab-btn"        data-pane="pane3-dev">Realized &amp; Deviation</button>
+      <button class="preview-tab-btn"        data-pane="pane3-non">Non-Moving SKUs</button>
     </div>
 
-    <!-- Pane 1: Sales & COGS -->
-    <div class="preview-pane active table-wrap" id="pane3-sales" style="display:block;margin-top:0;border-radius:0 0 12px 12px;">
+    <!-- Pane 1 (PRIMARY): SKU List Price P&L -->
+    <div class="preview-pane active table-wrap" id="pane3-prim" style="display:block;margin-top:0;border-radius:0 0 12px 12px;">
       <div class="table-header" style="border-radius:0;">
-        <h3>Sales &amp; COGS</h3>
-        <span class="row-count" id="row-count3a"></span>
+        <h3>Profit &amp; Loss — priced from SKU list (Unit Cost &amp; Sell Price)</h3>
+        <span class="row-count" id="rc-3p"></span>
       </div>
       <div class="table-scroll">
         <table>
           <thead><tr>
-            <th data-page="3a" data-col="plu">PLU Code <span class="sort-icon">↑</span></th>
-            <th data-page="3a" data-col="desc">Description <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="amt">Total Amount <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="sell_price">Sell Price <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="cogs">COGS <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="profit">Profit <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="margin">Margin % <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="avg_price">Avg Price <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="sales_mix">Sales Mix % <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="profit_contrib">Profit Contrib % <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="abc">ABC <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="whole_code">Whole Code <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
-            <th data-page="3a" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="plu">PLU Code <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="abc">ABC <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="sell_price">Sell Price <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="cogs">COGS <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="list_revenue">Revenue <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="list_profit" class="sorted">Profit <span class="sort-icon">↓</span></th>
+            <th data-page="3p" data-col="list_margin">Margin % <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="list_sales_mix">Sales Mix % <span class="sort-icon">↕</span></th>
+            <th data-page="3p" data-col="list_profit_contrib">Profit Contrib % <span class="sort-icon">↕</span></th>
           </tr></thead>
-          <tbody id="tbody3a"></tbody>
-          <tfoot id="tfoot3a"></tfoot>
+          <tbody id="tbody-3p"></tbody>
+          <tfoot id="tfoot-3p"></tfoot>
         </table>
       </div>
     </div>
 
-    <!-- Pane 2: Non-Moving SKUs -->
-    <div class="preview-pane table-wrap" id="pane3-profit" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+    <!-- Pane 2 (SECONDARY): Realized price + deviation from SKU list -->
+    <div class="preview-pane table-wrap" id="pane3-dev" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
       <div class="table-header" style="border-radius:0;">
-        <h3>Non-Moving SKUs</h3>
-        <span class="row-count" id="row-count3b"></span>
+        <h3>Realized price (Amount ÷ Qty) &amp; deviation from SKU list price</h3>
+        <span class="row-count" id="rc-3d"></span>
       </div>
       <div class="table-scroll">
         <table>
           <thead><tr>
-            <th data-page="3b" data-col="plu">PLU Code <span class="sort-icon">↑</span></th>
-            <th data-page="3b" data-col="desc">Description <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
-            <th data-page="3b" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="plu">PLU Code <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="qty">Total Qty <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="sell_price">Sell Price · List <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="avg_price">Avg Price · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="price_dev">Price Dev <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="list_revenue">Revenue · List <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="amt">Revenue · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="list_profit">Profit · List <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="profit">Profit · Realized <span class="sort-icon">↕</span></th>
+            <th data-page="3d" data-col="variance" class="sorted">Profit Variance <span class="sort-icon">↑</span></th>
+            <th data-page="3d" data-col="margin">Realized Margin % <span class="sort-icon">↕</span></th>
           </tr></thead>
-          <tbody id="tbody3b"></tbody>
-          <tfoot id="tfoot3b"></tfoot>
+          <tbody id="tbody-3d"></tbody>
+          <tfoot id="tfoot-3d"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 3: Non-Moving SKUs -->
+    <div class="preview-pane table-wrap" id="pane3-non" style="display:none;margin-top:0;border-radius:0 0 12px 12px;">
+      <div class="table-header" style="border-radius:0;">
+        <h3>Non-Moving SKUs</h3>
+        <span class="row-count" id="rc-3n"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th data-page="3n" data-col="plu" class="sorted">PLU Code <span class="sort-icon">↑</span></th>
+            <th data-page="3n" data-col="desc">Description <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="sup_code">Sup Code <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="sup_desc">Supplier <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="dept_code">Dept Code <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="dept_desc">Department <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="unit_cost">Unit Cost <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="uom_code">UOM <span class="sort-icon">↕</span></th>
+            <th data-page="3n" data-col="wholeprice">Whole Price <span class="sort-icon">↕</span></th>
+          </tr></thead>
+          <tbody id="tbody-3n"></tbody>
+          <tfoot id="tfoot-3n"></tfoot>
         </table>
       </div>
     </div>
@@ -1097,9 +1411,36 @@
 //  Per-page state
 // =====================================================================
 const state = {
-  1: { files: [], data: [], sortCol: 'plu', sortAsc: true },
-  2: { files: [], data: [], sortCol: 'plu', sortAsc: true },
+  // Weekly (page1): raw POS files + required SKU list -> P&L
+  1: { files: [], data: [], sortCol: 'plu', sortAsc: true, skuFile: null, pnl: [], unsold: [] },
+  // Monthly (page2): aggregates the weekly P&L export files (no SKU list needed)
+  2: { files: [], data: [], sortCol: 'plu', sortAsc: true, pnl: [], unsold: [] },
 };
+
+// P&L table contexts (priced from SKU list — shared renderers for Weekly/Monthly/P&L).
+// Defined here (before the init IIFEs) to avoid temporal-dead-zone errors.
+const pnl1 = {
+  data: [], unsold: [],
+  prim: { page: '1p', tbody: 'tbody-1p', tfoot: 'tfoot-1p', count: 'rc-1p', col: 'list_profit', asc: false },
+  dev:  { page: '1d', tbody: 'tbody-1d', tfoot: 'tfoot-1d', count: 'rc-1d', col: 'variance',    asc: true  },
+  uns:  { page: '1n', tbody: 'tbody-1n', tfoot: 'tfoot-1n', count: 'rc-1n', col: 'plu',         asc: true  },
+};
+const pnl2 = {
+  data: [], unsold: [],
+  prim: { page: '2p', tbody: 'tbody-2p', tfoot: 'tfoot-2p', count: 'rc-2p', col: 'list_profit', asc: false },
+  dev:  { page: '2d', tbody: 'tbody-2d', tfoot: 'tfoot-2d', count: 'rc-2d', col: 'variance',    asc: true  },
+  uns:  { page: '2n', tbody: 'tbody-2n', tfoot: 'tfoot-2n', count: 'rc-2n', col: 'plu',         asc: true  },
+};
+const pnl3 = {
+  data: [], unsold: [],
+  prim: { page: '3p', tbody: 'tbody-3p', tfoot: 'tfoot-3p', count: 'rc-3p', col: 'list_profit', asc: false },
+  dev:  { page: '3d', tbody: 'tbody-3d', tfoot: 'tfoot-3d', count: 'rc-3d', col: 'variance',    asc: true  },
+  uns:  { page: '3n', tbody: 'tbody-3n', tfoot: 'tfoot-3n', count: 'rc-3n', col: 'plu',         asc: true  },
+};
+
+// Data-quality issues per page (1=Weekly, 2=Monthly, 3=P&L) + deviation threshold.
+const dqData = { 1: [], 2: [], 3: [] };
+const DEV_THRESHOLD = 0.20;
 
 // =====================================================================
 //  Navigation
@@ -1137,6 +1478,74 @@ navigateTo('pageHome');
 //  Init both pages
 // =====================================================================
 [1, 2].forEach(p => initPage(p));
+
+// --- Weekly (page1) SKU data list upload (single, required for P&L) ---
+(function initStep1Sku() {
+  const drop  = document.getElementById('drop1sku');
+  const input = document.getElementById('file-input1sku');
+  drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) setStep1Sku(e.dataTransfer.files[0]);
+  });
+  input.addEventListener('change', () => {
+    if (input.files[0]) setStep1Sku(input.files[0]);
+    input.value = '';
+  });
+  // Wire P&L tabs/sort for both Weekly (page1) and Monthly (page2) views
+  initPnlTabs('preview-tabs1'); initPnlSort(pnl1);
+  initPnlTabs('preview-tabs2'); initPnlSort(pnl2);
+})();
+
+// --- Date-range quick presets (This/Last week, This/Last month, …) ---
+function applyDatePreset(p, kind) {
+  if (!kind) return;
+  const toISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const now = new Date();
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const monOff = (t.getDay() + 6) % 7; // days since Monday
+  let from, to;
+  switch (kind) {
+    case 'this-week':  from = new Date(t); from.setDate(t.getDate()-monOff); to = new Date(from); to.setDate(from.getDate()+6); break;
+    case 'last-week':  to = new Date(t); to.setDate(t.getDate()-monOff-1); from = new Date(to); from.setDate(to.getDate()-6); break;
+    case 'this-month': from = new Date(t.getFullYear(), t.getMonth(), 1);   to = new Date(t.getFullYear(), t.getMonth()+1, 0); break;
+    case 'last-month': from = new Date(t.getFullYear(), t.getMonth()-1, 1); to = new Date(t.getFullYear(), t.getMonth(), 0);   break;
+    case 'last-7':     to = new Date(t); from = new Date(t); from.setDate(t.getDate()-6);  break;
+    case 'last-30':    to = new Date(t); from = new Date(t); from.setDate(t.getDate()-29); break;
+    case 'ytd':        from = new Date(t.getFullYear(), 0, 1); to = new Date(t); break;
+    default: return;
+  }
+  document.getElementById(`date-from${p}`).value = toISO(from);
+  document.getElementById(`date-to${p}`).value   = toISO(to);
+}
+['1','2','3'].forEach(p => {
+  const el = document.getElementById('date-preset' + p);
+  if (el) el.addEventListener('change', e => applyDatePreset(p, e.target.value));
+});
+
+async function setStep1Sku(f) {
+  if (!f.name.match(/\.(csv|xls|xlsx)$/i)) { showError(1, `Skipped "${f.name}" — wrong file type.`); return; }
+  state[1].skuFile = { name: f.name, buffer: await f.arrayBuffer() };
+  renderStep1SkuTag();
+  syncButtons(1);
+}
+
+function renderStep1SkuTag() {
+  const el = document.getElementById('file-list1sku');
+  el.innerHTML = '';
+  const file = state[1].skuFile;
+  if (!file) return;
+  const tag = document.createElement('div');
+  tag.className = 'file-tag';
+  tag.innerHTML = `${escHtml(file.name)} <button class="remove-btn" title="Remove">×</button>`;
+  tag.querySelector('.remove-btn').addEventListener('click', () => {
+    state[1].skuFile = null;
+    renderStep1SkuTag();
+    syncButtons(1);
+  });
+  el.appendChild(tag);
+}
 
 function initPage(p) {
   const drop      = document.getElementById(`drop${p}`);
@@ -1231,6 +1640,7 @@ function detectColumns(headers) {
 //  Process
 // =====================================================================
 async function processFiles(p) {
+  if (p === 2) { await processMonthlyPnl(); return; }
   const s = state[p];
   hideError(p);
   show(`progress${p}`);
@@ -1249,9 +1659,7 @@ async function processFiles(p) {
     setProgress(p, (done / s.files.length) * 90);
 
     try {
-      const wb   = XLSX.read(f.buffer, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const rows = readSheetRows(f.buffer, f.name);
       if (rows.length < 2) { done++; continue; }
 
       const { pluIdx, descIdx, qtyIdx, amtIdx } = detectColumns(rows[0]);
@@ -1290,8 +1698,226 @@ async function processFiles(p) {
   hide(`progress${p}`);
   renderStats(p, done);
   renderTable(p);
+  if (p === 1) buildStep1Pnl();
   setBtn(p, 'process', false);
   setBtn(p, 'export', s.data.length === 0);
+}
+
+// Weekly (page1): join the aggregated weekly sales with the SKU data list and
+// build the SKU-list-priced P&L (primary) + realized/deviation views.
+function buildStep1Pnl() {
+  const s = state[1];
+  if (!s.skuFile) { hide('preview-tabs1'); hide('dq1'); return; }
+  try {
+    const { skuMap, skuLookup, duplicates, blankRows } = parseSkuMaster(s.skuFile.buffer, s.skuFile.name);
+    const salesRows = s.data.map(r => ({ plu: r.plu, desc: r.desc, qty: r.qty, amt: r.amt }));
+    const { data, unsold } = buildPnlData(salesRows, skuMap, skuLookup);
+    computePnlDerived(data);
+    s.pnl = data; s.unsold = unsold;
+    pnl1.data = data; pnl1.unsold = unsold;
+    renderPnlView(pnl1);
+    document.getElementById('preview-tabs1').style.display = 'block';
+    dqData[1] = computeIssues(data, { duplicates, blankRows });
+    renderDqPanel(1, dqData[1]);
+  } catch (err) {
+    showError(1, 'SKU list error: ' + err.message);
+    hide('preview-tabs1'); hide('dq1');
+  }
+}
+
+// Monthly (page2): aggregate the Weekly P&L export files into one monthly P&L.
+// No SKU list needed — unit cost & sell price already live in the weekly files.
+async function processMonthlyPnl() {
+  const s = state[2];
+  hideError(2);
+  show('progress2');
+  hide('stats2'); hide('table-wrap2'); hide('search2');
+  hide('dq2'); hide('preview-tabs2');
+  setBtn(2, 'process', true); setBtn(2, 'export', true);
+
+  const agg         = new Map();   // plu -> aggregated row
+  const nonMove     = new Map();   // plu -> non-moving entry (union across weeks)
+  const errors      = [];
+  const invalidFiles = [];         // files that yielded no P&L data
+  let done = 0;
+
+  // flexible header finder
+  const finder = headerRow => {
+    const h = headerRow.map(v => String(v ?? '').trim().toLowerCase());
+    return (preds) => {
+      for (const pred of preds) { const i = h.findIndex(pred); if (i !== -1) return i; }
+      return -1;
+    };
+  };
+  const eq  = t => (v => v === t);
+  const inc = t => (v => v.includes(t));
+  const incAll = (...ts) => (v => ts.every(t => v.includes(t)));
+  const incNot = (t, ...nots) => (v => v.includes(t) && nots.every(n => !v.includes(n)));
+
+  for (const f of s.files) {
+    setProgressLbl(2, `Reading ${f.name}… (${done + 1}/${s.files.length})`);
+    setProgress(2, (done / s.files.length) * 90);
+    let fileContent = 0;
+    try {
+      for (const { name: sheetName, rows } of readAllSheets(f.buffer, f.name)) {
+        if (rows.length < 2) continue;
+        // Skip the auxiliary sheets of the P&L file — the primary sheet already
+        // carries realized figures, so processing these would double-count.
+        if (/realized|deviation|summary/i.test(sheetName)) continue;
+
+        const find = finder(rows[0]);
+        const iPlu  = find([eq('plu code'), incAll('plu'), eq('plu')]);
+        const iQty  = find([incAll('total','qty'), inc('qty')]);
+        const iRev  = find([eq('revenue'), incNot('revenue','realized')]);   // list revenue
+        if (iPlu === -1) continue;
+
+        // Non-moving sheet: has PLU + (whole price / unit cost) but no qty/revenue
+        const looksNonMoving = /non[-\s]?moving|unsold/i.test(sheetName) || (iQty === -1 && iRev === -1);
+        if (looksNonMoving) {
+          const iDesc = find([inc('desc')]);
+          const iSupC = find([incAll('sup','code'), inc('sup code')]);
+          const iSupD = find([inc('supplier'), incAll('sup','desc')]);
+          const iDptC = find([incAll('dept','code')]);
+          const iDptD = find([inc('department'), incAll('dept','desc')]);
+          const iCost = find([incAll('unit','cost'), inc('unit cost')]);
+          const iSell = find([incAll('sell','price'), inc('sell price')]);
+          const iUom  = find([eq('uom'), inc('uom')]);
+          const iWP   = find([incAll('whole','price')]);
+          for (let r = 1; r < rows.length; r++) {
+            const code = String(rows[r][iPlu] ?? '').trim();
+            if (!code || code.toUpperCase() === 'TOTAL') continue;
+            fileContent++;
+            if (!nonMove.has(code)) nonMove.set(code, {
+              plu: code,
+              desc:       iDesc !== -1 ? String(rows[r][iDesc] ?? '').trim() : '',
+              sup_code:   iSupC !== -1 ? String(rows[r][iSupC] ?? '').trim() : '',
+              sup_desc:   iSupD !== -1 ? String(rows[r][iSupD] ?? '').trim() : '',
+              dept_code:  iDptC !== -1 ? String(rows[r][iDptC] ?? '').trim() : '',
+              dept_desc:  iDptD !== -1 ? String(rows[r][iDptD] ?? '').trim() : '',
+              unit_cost:  iCost !== -1 ? parseNum(rows[r][iCost]) : null,
+              sell_price: iSell !== -1 ? parseNum(rows[r][iSell]) : null,
+              uom_code:   iUom  !== -1 ? String(rows[r][iUom] ?? '').trim() : '',
+              wholeprice: iWP   !== -1 ? parseNum(rows[r][iWP]) : null,
+            });
+          }
+          continue;
+        }
+
+        // P&L data sheet: accumulate per-SKU money + qty
+        const iDesc = find([inc('desc')]);
+        const iDptD = find([inc('department'), incAll('dept','desc')]);
+        const iSupD = find([inc('supplier'), incAll('sup','desc')]);
+        const iCost = find([incAll('unit','cost'), inc('unit cost')]);
+        const iSell = find([incNot('sell','realized'), incAll('sell','price')]);
+        const iCogs = find([inc('cogs')]);
+        const iLPft = find([eq('profit'), incNot('profit','realized','contrib','margin')]);
+        const iRRev = find([incAll('revenue','realized'), incAll('amount'), inc('amount')]);
+        const iRPft = find([incAll('profit','realized')]);
+        if (iQty === -1) continue;
+
+        for (let r = 1; r < rows.length; r++) {
+          const code = String(rows[r][iPlu] ?? '').trim();
+          if (!code || code.toUpperCase() === 'TOTAL') continue;
+          const qty  = parseNum(rows[r][iQty]);
+          const lrev = iRev  !== -1 ? parseNum(rows[r][iRev])  : 0;
+          const lpft = iLPft !== -1 ? parseNum(rows[r][iLPft]) : 0;
+          const cogs = iCogs !== -1 ? parseNum(rows[r][iCogs]) : (lrev - lpft);
+          const rrev = iRRev !== -1 ? parseNum(rows[r][iRRev]) : lrev;  // realized; fallback to list
+          const rpft = iRPft !== -1 ? parseNum(rows[r][iRPft]) : (rrev - cogs);
+          const ucost = iCost !== -1 ? parseNum(rows[r][iCost]) : null;
+          const usell = iSell !== -1 ? parseNum(rows[r][iSell]) : null;
+          let e = agg.get(code);
+          if (!e) {
+            e = { plu: code, desc: '', dept_desc: '', sup_desc: '',
+                  unit_cost: null, sell_price: null, costs: new Set(), prices: new Set(),
+                  qty: 0, cogs: 0, list_revenue: 0, list_profit: 0, amt: 0, profit: 0 };
+            agg.set(code, e);
+          }
+          fileContent++;
+          e.qty += qty; e.cogs += cogs; e.list_revenue += lrev; e.list_profit += lpft;
+          e.amt += rrev; e.profit += rpft;
+          if (ucost !== null && ucost > 0) e.costs.add(ucost.toFixed(4));
+          if (usell !== null && usell > 0) e.prices.add(usell.toFixed(4));
+          if (!e.desc && iDesc !== -1) e.desc = String(rows[r][iDesc] ?? '').trim();
+          if (!e.dept_desc && iDptD !== -1) e.dept_desc = String(rows[r][iDptD] ?? '').trim();
+          if (!e.sup_desc && iSupD !== -1) e.sup_desc = String(rows[r][iSupD] ?? '').trim();
+          if (e.unit_cost === null && ucost !== null) e.unit_cost = ucost;
+          if (e.sell_price === null && usell !== null) e.sell_price = usell;
+        }
+      }
+    } catch (err) {
+      errors.push(`"${f.name}": ${err.message}`);
+    }
+    if (!fileContent) invalidFiles.push(f.name);
+    done++;
+  }
+
+  setProgress(2, 100);
+  if (errors.length) showError(2, errors.join('\n'));
+
+  // Reconstruct full P&L rows from the aggregated totals
+  const data = [...agg.values()].map(e => {
+    const special = specialCode(e.plu);
+    if (special) {  // discount line (DISC1/DISC2): 0 cost & price, amount flows through
+      return {
+        plu: e.plu, desc: e.desc || special.desc, qty: e.qty, amt: e.amt,
+        unit_cost: 0, sell_price: 0, cogs: 0,
+        list_revenue: e.list_revenue, list_profit: e.list_profit,
+        avg_price: e.qty ? e.amt / e.qty : null,
+        profit: e.profit, variance: e.amt - e.list_revenue, price_dev: null, noPrice: false,
+        sup_code: '', sup_desc: special.desc, dept_code: '', dept_desc: 'Discounts',
+        whole_code: '', uom_code: '', wholeprice: null,
+        matched: true, isDiscount: true,
+      };
+    }
+    // Weighted-average effective prices for the month (volume-weighted across weeks):
+    //   sell = Σ(price_w × qty_w) / Σ qty_w = list_revenue / qty ;  cost = COGS / qty.
+    // Falls back to the last-seen weekly price only when qty is 0.
+    const sell = e.qty ? e.list_revenue / e.qty : (e.sell_price ?? null);
+    const cost = e.qty ? e.cogs        / e.qty : (e.unit_cost ?? null);
+    const noPrice = !(sell > 0) && !(e.list_revenue > 0);
+    return {
+      plu: e.plu, desc: e.desc, qty: e.qty, amt: e.amt,
+      unit_cost: cost, sell_price: sell, cogs: e.cogs,
+      list_revenue: e.list_revenue, list_profit: e.list_profit,
+      avg_price: e.qty ? e.amt / e.qty : null,
+      profit: e.profit,
+      variance: e.amt - e.list_revenue,
+      price_dev: (sell !== null && e.qty) ? (e.amt / e.qty - sell) : null,
+      noPrice,
+      sup_code: '', sup_desc: e.sup_desc, dept_code: '', dept_desc: e.dept_desc,
+      whole_code: '', uom_code: '', wholeprice: null,
+      matched: true,
+    };
+  });
+
+  // Monthly non-moving = collected non-moving items that never sold this month
+  const soldSet = new Set();
+  for (const r of data) { soldSet.add(r.plu); soldSet.add(r.plu.replace(/^0+/, '') || '0'); }
+  const unsold = [...nonMove.values()].filter(n =>
+    !soldSet.has(n.plu) && !soldSet.has(n.plu.replace(/^0+/, '') || '0'));
+
+  computePnlDerived(data);
+  s.data   = data.map(r => ({ plu: r.plu, desc: r.desc, qty: r.qty, amt: r.amt }));
+  s.pnl    = data;
+  s.unsold = unsold;
+  pnl2.data = data; pnl2.unsold = unsold;
+
+  const priceChanged = [...agg.values()]
+    .filter(e => e.costs.size > 1 || e.prices.size > 1)
+    .map(e => ({ plu: e.plu, desc: e.desc,
+                 unit_costs: [...e.costs].join(' / '),
+                 sell_prices: [...e.prices].join(' / ') }));
+
+  hide('progress2');
+  renderStats(2, done);
+  renderTable(2);
+  renderPnlView(pnl2);
+  document.getElementById('preview-tabs2').style.display = 'block';
+  dqData[2] = computeIssues(data, { priceChanged, invalidFiles });
+  renderDqPanel(2, dqData[2]);
+  setBtn(2, 'process', false);
+  setBtn(2, 'export', data.length === 0);
 }
 
 function parseNum(v) {
@@ -1301,16 +1927,63 @@ function parseNum(v) {
 }
 
 // =====================================================================
+//  Robust file reading
+//  SheetJS's CSV parser merges/drops rows when a description contains a
+//  stray double-quote (e.g. an inch mark like 1/2"). We parse CSV ourselves,
+//  one physical line per row, so quote glitches never span rows.
+// =====================================================================
+function parseCsvLine(line) {
+  const out = []; let field = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { field += '"'; i++; }  // escaped ""
+        else inQ = false;                                // closing quote
+      } else field += ch;
+    } else {
+      if (ch === '"' && field === '') inQ = true;        // opening quote only at field start
+      else if (ch === ',') { out.push(field); field = ''; }
+      else field += ch;                                  // a stray " mid-field stays literal
+    }
+  }
+  out.push(field);
+  return out.map(s => s.trim());
+}
+function parseCsvText(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
+  const rows = [];
+  for (const line of text.split(/\r\n|\r|\n/)) {
+    if (line.trim() === '') continue;
+    rows.push(parseCsvLine(line));
+  }
+  return rows;
+}
+function decodeBuffer(buffer) {
+  try { return new TextDecoder('utf-8', { fatal: false }).decode(buffer); }
+  catch (e) { return new TextDecoder('latin1').decode(buffer); }
+}
+// Returns [{ name, rows }] for every sheet (CSV = one tolerant-parsed sheet).
+function readAllSheets(buffer, fileName) {
+  if (/\.csv$/i.test(fileName || '')) {
+    return [{ name: 'CSV', rows: parseCsvText(decodeBuffer(buffer)) }];
+  }
+  const wb = XLSX.read(buffer, { type: 'array' });
+  return wb.SheetNames.map(n => ({ name: n, rows: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '' }) }));
+}
+// Rows (array-of-arrays) of the first sheet.
+function readSheetRows(buffer, fileName) {
+  const sheets = readAllSheets(buffer, fileName);
+  return sheets.length ? sheets[0].rows : [];
+}
+
+// =====================================================================
 //  Stats
 // =====================================================================
 function renderStats(p, filesDone) {
   const s = state[p];
-  const tQty = s.data.reduce((a, r) => a + r.qty, 0);
   const tAmt = s.data.reduce((a, r) => a + r.amt, 0);
-  document.getElementById(`s${p}-files`).textContent = filesDone;
-  document.getElementById(`s${p}-skus`).textContent  = s.data.length.toLocaleString();
-  document.getElementById(`s${p}-qty`).textContent   = tQty.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  document.getElementById(`s${p}-amt`).textContent   = tAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById(`s${p}-amt`).textContent = tAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   document.getElementById(`stats${p}`).style.display = 'flex';
 }
 
@@ -1366,31 +2039,12 @@ function exportToExcel(p) {
 
   const from = document.getElementById(`date-from${p}`).value;
   const to   = document.getElementById(`date-to${p}`).value;
+  const period = p === 1 ? periodWeekly(from, to) : periodMonthly(from, to);
 
-  const rows = s.data.map(r => ({
-    'PLU Code':     r.plu,
-    'Description':  r.desc,
-    'Total Qty':    r.qty,
-    'Total Amount': r.amt,
-  }));
-
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{ wch: 20 }, { wch: 45 }, { wch: 14 }, { wch: 16 }];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `${label} PLU Summary`);
-
-  let datePart;
-  if (from && to)  datePart = `${from}_to_${to}`;
-  else if (from)   datePart = `from_${from}`;
-  else if (to)     datePart = `to_${to}`;
-  else             datePart = new Date().toISOString().slice(0, 10);
-
-  if (fmt === 'csv') {
-    XLSX.writeFile(wb, `PLU_${label}_Summary_${datePart}.csv`, { bookType: 'csv' });
-  } else {
-    XLSX.writeFile(wb, `PLU_${label}_Summary_${datePart}.xlsx`);
-  }
+  // Output = SKU-list-priced P&L, split into two files:
+  // File 1 (Page 1 = P&L, Page 2 = realized & deviation, Page 3 = summary) + File 2 (Non-Moving).
+  if (!s.pnl || !s.pnl.length) { showError(p, 'Process the files first to build the P&L.'); return; }
+  exportPnlFiles(s.pnl, s.unsold || [], period, fmt, label);
 }
 
 // =====================================================================
@@ -1409,6 +2063,24 @@ function clearAll(p) {
   document.getElementById(`search-input${p}`).value   = '';
   document.getElementById(`date-from${p}`).value      = '';
   document.getElementById(`date-to${p}`).value        = '';
+
+  // Also clear the P&L views (Weekly has an SKU list; Monthly does not)
+  if (p === 1) {
+    s.skuFile = null; s.pnl = []; s.unsold = [];
+    pnl1.data = []; pnl1.unsold = []; dqData[1] = [];
+    renderStep1SkuTag();
+    ['tbody-1p','tfoot-1p','tbody-1d','tfoot-1d','tbody-1n','tfoot-1n'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.innerHTML = '';
+    });
+    hide('dq1'); hide('preview-tabs1');
+  } else if (p === 2) {
+    s.pnl = []; s.unsold = [];
+    pnl2.data = []; pnl2.unsold = []; dqData[2] = [];
+    ['tbody-2p','tfoot-2p','tbody-2d','tfoot-2d','tbody-2n','tfoot-2n'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.innerHTML = '';
+    });
+    hide('dq2'); hide('preview-tabs2');
+  }
 
   hide(`table-wrap${p}`);
   hide(`stats${p}`);
@@ -1430,7 +2102,9 @@ function clearAll(p) {
 // =====================================================================
 function syncButtons(p) {
   const has = state[p].files.length > 0;
-  setBtn(p, 'process', !has);
+  // Weekly (page1) requires an SKU data list before it can build the P&L.
+  const ready = p === 1 ? (has && !!state[1].skuFile) : has;
+  setBtn(p, 'process', !ready);
   setBtn(p, 'clear',   !has && state[p].data.length === 0);
   if (!has) setBtn(p, 'export', true);
 }
@@ -1500,44 +2174,9 @@ const s3 = {
   document.getElementById('btn-export3').addEventListener('click',  exportStep3);
   document.getElementById('btn-clear3').addEventListener('click',   clearStep3);
 
-  // Preview tab switching
-  document.querySelectorAll('.preview-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.preview-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.preview-pane').forEach(p => {
-        p.classList.remove('active');
-        p.style.display = 'none';
-      });
-      btn.classList.add('active');
-      const pane = document.getElementById(btn.dataset.pane);
-      pane.classList.add('active');
-      pane.style.display = 'block';
-    });
-  });
-
-  // Sortable headers for both panes
-  ['3a','3b'].forEach(pg => {
-    document.querySelectorAll(`thead th[data-page="${pg}"]`).forEach(th => {
-      th.addEventListener('click', () => {
-        const col = th.dataset.col;
-        if (pg === '3a') {
-          if (s3.sortCol3a === col) s3.sortAsc3a = !s3.sortAsc3a;
-          else { s3.sortCol3a = col; s3.sortAsc3a = true; }
-        } else {
-          if (s3.sortCol3b === col) s3.sortAsc3b = !s3.sortAsc3b;
-          else { s3.sortCol3b = col; s3.sortAsc3b = true; }
-        }
-        document.querySelectorAll(`thead th[data-page="${pg}"]`).forEach(t => {
-          t.classList.remove('sorted');
-          t.querySelector('.sort-icon').textContent = '↕';
-        });
-        th.classList.add('sorted');
-        th.querySelector('.sort-icon').textContent =
-          (pg === '3a' ? s3.sortAsc3a : s3.sortAsc3b) ? '↑' : '↓';
-        renderStep3Tables();
-      });
-    });
-  });
+  // Scoped tab switching + sortable headers (generic P&L wiring)
+  initPnlTabs('preview-tabs3');
+  initPnlSort(pnl3);
 
 })();
 
@@ -1578,12 +2217,336 @@ function syncStep3Buttons() {
 }
 
 // =====================================================================
+//  SHARED P&L CORE  (used by both Step 2 and Step 3)
+//  Primary method  = SKU LIST price  (unit_cost + sell_price from master)
+//  Secondary       = Realized price  (amt, avg_price = amt/qty) + deviation
+// =====================================================================
+
+// Parse an SKU master workbook buffer -> { skuMap, skuLookup, duplicates, blankRows }.
+function parseSkuMaster(buffer, fileName) {
+  const skuMap      = new Map(); // exact prod_code -> entry
+  const skuMapStrip = new Map(); // leading-zero-stripped code -> entry (fallback)
+  const duplicates  = [];        // prod_codes appearing more than once
+  let   blankRows   = 0;         // rows with no prod_code
+  const rows = readSheetRows(buffer, fileName);
+  if (!rows.length) throw new Error('SKU data list appears empty.');
+
+  const h = rows[0].map(v => String(v).trim().toLowerCase());
+  const findCol = (...kws) => {
+    for (const kw of kws) { const i = h.findIndex(v => v === kw);         if (i !== -1) return i; }
+    for (const kw of kws) { const i = h.findIndex(v => v.startsWith(kw)); if (i !== -1) return i; }
+    for (const kw of kws) { const i = h.findIndex(v => v.includes(kw));   if (i !== -1) return i; }
+    return -1;
+  };
+  const iCode  = findCol('prod_code', 'plu_code', 'plu', 'code');
+  const iDesc  = findCol('prod_desc1', 'prod_desc', 'desc', 'description', 'name');
+  const iCost  = findCol('unit_cost', 'cost');
+  const iSellP = findCol('sell_price', 'selling_price', 'price');
+  const iSup   = findCol('sup_code', 'supplier_code');
+  const iSupD  = findCol('sup_desc', 'supplier');
+  const iDept  = findCol('dept_code', 'department_code');
+  const iDeptD = findCol('dept_desc', 'department');
+  const iWhole = findCol('whole_code');
+  const iUom   = findCol('uom_code', 'uom');
+  const iWP    = findCol('wholeprice', 'whole_price');
+
+  for (let r = 1; r < rows.length; r++) {
+    const row  = rows[r];
+    const code = String(row[iCode] ?? '').trim();
+    if (!code) { blankRows++; continue; }
+    if (skuMap.has(code)) duplicates.push(code);
+    const entry = {
+      desc:       iDesc  !== -1 ? String(row[iDesc]  ?? '').trim() : '',
+      unit_cost:  iCost  !== -1 ? parseNum(row[iCost])  : 0,
+      sell_price: iSellP !== -1 ? parseNum(row[iSellP]) : null,
+      sup_code:   iSup   !== -1 ? String(row[iSup]   ?? '').trim() : '',
+      sup_desc:   iSupD  !== -1 ? String(row[iSupD]  ?? '').trim() : '',
+      dept_code:  iDept  !== -1 ? String(row[iDept]  ?? '').trim() : '',
+      dept_desc:  iDeptD !== -1 ? String(row[iDeptD] ?? '').trim() : '',
+      whole_code: iWhole !== -1 ? String(row[iWhole] ?? '').trim() : '',
+      uom_code:   iUom   !== -1 ? String(row[iUom]   ?? '').trim() : '',
+      wholeprice: iWP    !== -1 ? parseNum(row[iWP])   : null,
+    };
+    skuMap.set(code, entry);
+    const stripped = code.replace(/^0+/, '') || '0';
+    if (!skuMapStrip.has(stripped)) skuMapStrip.set(stripped, entry);
+  }
+
+  const skuLookup = plu => {
+    if (skuMap.has(plu)) return skuMap.get(plu);
+    const stripped = plu.replace(/^0+/, '') || '0';
+    return skuMapStrip.get(stripped) ?? null;
+  };
+  return { skuMap, skuLookup, duplicates, blankRows };
+}
+
+// Built-in special PLU codes that are NOT products and won't be in the SKU list.
+// These are cashier-applied discounts (Manila social-benefit schemes): zero unit
+// cost & zero selling price, with the (negative) amount flowing into the P&L.
+const SPECIAL_CODES = {
+  DISC1: 'S.C.D. (Senior Citizen Discount)',
+  DISC2: 'P.W.D. (Person With Disability Discount)',
+};
+function specialCode(plu) {
+  const key = String(plu ?? '').trim().toUpperCase();
+  return SPECIAL_CODES[key] ? { code: key, desc: SPECIAL_CODES[key] } : null;
+}
+// Build a discount/adjustment P&L row: 0 cost & price; the amount passes through
+// both the realized and SKU-list methods so it reduces revenue & profit.
+function makeDiscountRow(s, special) {
+  return {
+    plu: s.plu, desc: s.desc || special.desc, qty: s.qty, amt: s.amt,
+    unit_cost: 0, sell_price: 0, cogs: 0,
+    list_revenue: s.amt, list_profit: s.amt,
+    avg_price: s.qty ? s.amt / s.qty : null,
+    profit: s.amt,
+    variance: 0, price_dev: null, noPrice: false,
+    sup_code: '', sup_desc: special.desc, dept_code: '', dept_desc: 'Discounts',
+    whole_code: '', uom_code: '', wholeprice: null,
+    matched: true, matchType: 'special', isDiscount: true,
+  };
+}
+
+// Join aggregated sales rows [{plu,desc,qty,amt}] with an SKU lookup.
+// Returns { data, unsold }.
+function buildPnlData(salesRows, skuMap, skuLookup) {
+  const data = salesRows.map(s => {
+    const sku  = skuLookup(s.plu);
+    // Recognised discount line not present in the SKU list (DISC1 / DISC2, …)
+    const special = (sku === null) ? specialCode(s.plu) : null;
+    if (special) return makeDiscountRow(s, special);
+    // exact code match vs leading-zero-stripped fallback (for the fuzzy-match check)
+    const matchType = sku === null ? null : (skuMap.has(s.plu) ? 'exact' : 'stripped');
+    const cost = sku ? sku.unit_cost : 0;
+    const cogs = cost * s.qty;
+    const sp   = sku ? sku.sell_price : null;
+    // matched SKU but no usable selling price -> list revenue = 0 and flag (Option B)
+    const noPrice  = sku !== null && (sp === null || sp === undefined || Number.isNaN(sp));
+    const listRev  = sku === null ? null : (noPrice ? 0 : sp * s.qty);
+    const avgPrice = s.qty ? s.amt / s.qty : null;   // realized per-unit price
+    return {
+      plu:        s.plu,
+      desc:       s.desc,
+      qty:        s.qty,
+      amt:        s.amt,
+      unit_cost:  sku ? cost : null,
+      sell_price: sp,
+      cogs:       sku ? cogs : null,
+      // --- PRIMARY: SKU list price method (revenue = sell_price x qty) ---
+      list_revenue: listRev,
+      list_profit:  sku ? ((listRev ?? 0) - cogs) : null,
+      // --- SECONDARY: realized method (revenue = amt, price = amt/qty) ---
+      avg_price:  avgPrice,
+      profit:     sku ? (s.amt - cogs) : null,
+      // --- deviation of realized vs SKU list ---
+      variance:   sku ? (s.amt - (listRev ?? 0)) : null,                            // revenue/profit gap (realized - list)
+      price_dev:  (sku && !noPrice && avgPrice !== null) ? (avgPrice - sp) : null,  // per-unit price gap (realized - list)
+      noPrice:    noPrice,
+      sup_code:   sku ? sku.sup_code   : '',
+      sup_desc:   sku ? sku.sup_desc   : '',
+      dept_code:  sku ? sku.dept_code  : '',
+      dept_desc:  sku ? sku.dept_desc  : '',
+      whole_code: sku ? sku.whole_code : '',
+      uom_code:   sku ? sku.uom_code   : '',
+      wholeprice: sku ? sku.wholeprice : null,
+      matched:    sku !== null,
+      matchType:  matchType,
+    };
+  });
+
+  const soldPluSet = new Set();
+  for (const s of salesRows) {
+    soldPluSet.add(s.plu);
+    soldPluSet.add(s.plu.replace(/^0+/, '') || '0');
+  }
+  const unsold = [];
+  for (const [code, entry] of skuMap) {
+    const stripped = code.replace(/^0+/, '') || '0';
+    if (!soldPluSet.has(code) && !soldPluSet.has(stripped)) {
+      unsold.push({
+        plu:        code,
+        desc:       entry.desc,
+        sup_code:   entry.sup_code,
+        sup_desc:   entry.sup_desc,
+        dept_code:  entry.dept_code,
+        dept_desc:  entry.dept_desc,
+        unit_cost:  entry.unit_cost,
+        sell_price: entry.sell_price,
+        uom_code:   entry.uom_code,
+        wholeprice: entry.wholeprice,
+      });
+    }
+  }
+  return { data, unsold };
+}
+
+// Compute ABC + both methods' portfolio metrics in place on a data[] array.
+function computePnlDerived(data) {
+  const totalAmt        = data.reduce((a, r) => a + r.amt, 0);
+  const totalProfit     = data.reduce((a, r) => a + (r.profit ?? 0), 0);
+  const totalListRev    = data.reduce((a, r) => a + (r.list_revenue ?? 0), 0);
+  const totalListProfit = data.reduce((a, r) => a + (r.list_profit  ?? 0), 0);
+
+  // ABC classification by realized revenue (cumulative buckets)
+  const byAmt = [...data].sort((a, b) => b.amt - a.amt);
+  let cum = 0;
+  for (const r of byAmt) {
+    cum += r.amt;
+    const pct = totalAmt ? cum / totalAmt : 0;
+    r.abc = pct <= 0.70 ? 'A' : pct <= 0.90 ? 'B' : 'C';
+  }
+  for (const r of data) {
+    // Realized (secondary)
+    r.margin          = (r.profit !== null && r.amt) ? r.profit / r.amt * 100 : null;
+    r.sales_mix       = totalAmt    ? r.amt / totalAmt * 100 : null;
+    r.profit_contrib  = totalProfit ? (r.profit ?? 0) / totalProfit * 100 : null;
+    // SKU list (primary)
+    r.list_margin         = (r.list_profit !== null && r.list_revenue) ? r.list_profit / r.list_revenue * 100 : null;
+    r.list_sales_mix      = totalListRev    ? (r.list_revenue ?? 0) / totalListRev * 100 : null;
+    r.list_profit_contrib = totalListProfit ? (r.list_profit  ?? 0) / totalListProfit * 100 : null;
+  }
+}
+
+function round2(v) { return (v === null || v === undefined || v === '') ? '' : Math.round(v * 100) / 100; }
+
+// Build the data-quality issue list for a P&L dataset.
+// meta: { duplicates, blankRows } (Weekly/P&L) or { priceChanged, invalidFiles } (Monthly).
+// Each group = { key, label, severity, columns:[[header, getter], …], rows:[…] }.
+function computeIssues(data, meta = {}) {
+  const groups = [];
+  const add = (key, label, severity, columns, rows) => {
+    if (rows && rows.length) groups.push({ key, label, severity, columns, rows });
+  };
+
+  // --- A. Matching & SKU-list integrity ---
+  add('not_matched', 'SKU not matched (sold but not in SKU list)', 'Blocker',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Qty', r=>r.qty], ['Amount', r=>round2(r.amt)]],
+      data.filter(r => r.matched === false));
+  add('fuzzy_match', 'Matched only by zero-stripping (verify match)', 'Info',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Qty', r=>r.qty]],
+      data.filter(r => r.matchType === 'stripped'));
+  if (meta.duplicates && meta.duplicates.length)
+    add('dup_plu', 'Duplicate PLU in SKU list', 'Warning',
+        [['PLU Code', r=>r.plu]],
+        [...new Set(meta.duplicates)].map(c => ({ plu: c })));
+  if (meta.blankRows)
+    add('blank_plu', 'Blank PLU rows skipped in SKU list', 'Info',
+        [['Note', r=>r.note]],
+        [{ note: `${meta.blankRows} row(s) in the SKU list had no PLU code and were skipped.` }]);
+
+  // --- B. Cost & price quality ---
+  add('zero_cost', 'Missing / zero unit cost', 'Blocker',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Unit Cost', r=>r.unit_cost], ['Qty', r=>r.qty]],
+      data.filter(r => r.matched && !r.isDiscount && (r.unit_cost === null || r.unit_cost <= 0)));
+  add('zero_price', 'Missing / zero selling price', 'Blocker',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Sell Price', r=>r.sell_price], ['Qty', r=>r.qty]],
+      data.filter(r => r.matched && r.noPrice));
+  add('below_cost', 'Sell price below unit cost', 'Warning',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Unit Cost', r=>r.unit_cost], ['Sell Price', r=>r.sell_price]],
+      data.filter(r => r.matched && r.sell_price > 0 && r.unit_cost > 0 && r.sell_price < r.unit_cost));
+  add('negative_value', 'Negative unit cost or sell price', 'Info',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Unit Cost', r=>r.unit_cost], ['Sell Price', r=>r.sell_price]],
+      data.filter(r => r.matched && ((r.unit_cost !== null && r.unit_cost < 0) || (r.sell_price !== null && r.sell_price < 0))));
+
+  // --- C. Sales-figure anomalies ---
+  add('neg_qty', 'Negative quantity (returns / voids)', 'Warning',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Qty', r=>r.qty], ['Amount', r=>round2(r.amt)]],
+      data.filter(r => r.qty < 0));
+  add('qty_amt_mismatch', 'Inconsistent qty / amount', 'Warning',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Qty', r=>r.qty], ['Amount', r=>round2(r.amt)]],
+      data.filter(r => !r.isDiscount && ((r.qty > 0 && r.amt <= 0) || (r.qty === 0 && r.amt !== 0))));
+  add('realized_loss', 'Realized profit negative (sold below cost)', 'Warning',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Qty', r=>r.qty], ['Amount', r=>round2(r.amt)], ['COGS', r=>round2(r.cogs)], ['Profit', r=>round2(r.profit)]],
+      data.filter(r => r.matched && !r.isDiscount && r.profit !== null && r.profit < 0));
+  add('price_deviation', `Realized price ${Math.round(DEV_THRESHOLD*100)}%+ off list price`, 'Warning',
+      [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Sell Price (List)', r=>r.sell_price], ['Avg Price (Realized)', r=>round2(r.avg_price)], ['Deviation %', r=>r.devpct]],
+      data.filter(r => r.matched && !r.noPrice && r.sell_price > 0 && r.qty > 0 && r.avg_price !== null &&
+                       Math.abs(r.avg_price - r.sell_price) / r.sell_price >= DEV_THRESHOLD)
+          .map(r => ({ ...r, devpct: round2((r.avg_price - r.sell_price) / r.sell_price * 100) })));
+
+  // --- Monthly-only ---
+  if (meta.priceChanged && meta.priceChanged.length)
+    add('price_changed', 'Unit cost or sell price changed across weeks', 'Warning',
+        [['PLU Code', r=>r.plu], ['Description', r=>r.desc], ['Unit Costs Seen', r=>r.unit_costs], ['Sell Prices Seen', r=>r.sell_prices]],
+        meta.priceChanged);
+  if (meta.invalidFiles && meta.invalidFiles.length)
+    add('invalid_file', 'Uploaded file had no usable P&L data', 'Blocker',
+        [['File', r=>r.file]],
+        meta.invalidFiles.map(n => ({ file: n })));
+
+  return groups;
+}
+
+// Render the Data Quality panel for page p (1/2/3) from its issue groups.
+function renderDqPanel(p, groups) {
+  const total = groups.reduce((a, g) => a + g.rows.length, 0);
+  const sevClass = s => s === 'Blocker' ? 'sev-blocker' : s === 'Warning' ? 'sev-warning' : 'sev-info';
+  const order = { Blocker: 0, Warning: 1, Info: 2 };
+  const body  = document.getElementById(`dq${p}-body`);
+  document.getElementById(`dq${p}-title`).textContent = groups.length
+    ? `Data Quality — ${total.toLocaleString()} issue${total === 1 ? '' : 's'} across ${groups.length} check${groups.length === 1 ? '' : 's'}`
+    : 'Data Quality';
+  body.innerHTML = groups.length
+    ? [...groups].sort((a, b) => order[a.severity] - order[b.severity]).map(g => `<tr>
+        <td><span class="sev ${sevClass(g.severity)}">${g.severity}</span></td>
+        <td>${escHtml(g.label)}</td>
+        <td class="count">${g.rows.length.toLocaleString()}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="3" class="dq-ok">✓ No data-quality issues found.</td></tr>`;
+
+  const xlsx = document.getElementById(`dq${p}-xlsx`);
+  const csv  = document.getElementById(`dq${p}-csv`);
+  xlsx.onclick = () => exportIssues(p, 'xlsx');
+  csv.onclick  = () => exportIssues(p, 'csv');
+  xlsx.disabled = csv.disabled = groups.length === 0;
+  document.getElementById(`dq${p}`).style.display = 'block';
+}
+
+// Export the issues for page p. Excel = summary + one sheet per issue; CSV = one flat sheet.
+function exportIssues(p, fmtType) {
+  const groups = dqData[p] || [];
+  if (!groups.length) return;
+  const label = p === 1 ? 'Weekly' : p === 2 ? 'Monthly' : 'Reprice';
+  const from = document.getElementById(`date-from${p}`)?.value || '';
+  const to   = document.getElementById(`date-to${p}`)?.value   || '';
+  const period = p === 1 ? periodWeekly(from, to) : periodMonthly(from, to);
+
+  if (fmtType === 'csv') {
+    const rows = [];
+    for (const g of groups)
+      for (const r of g.rows) {
+        const o = { 'Issue': g.label, 'Severity': g.severity };
+        for (const [h, f] of g.columns) o[h] = f(r);
+        rows.push(o);
+      }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Issues');
+    XLSX.writeFile(wb, `${period} ${label} Issues.csv`, { bookType: 'csv' });
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const wsS = XLSX.utils.json_to_sheet(groups.map(g => ({ 'Severity': g.severity, 'Issue': g.label, 'Count': g.rows.length })));
+  wsS['!cols'] = [{ wch: 10 }, { wch: 50 }, { wch: 8 }];
+  XLSX.utils.book_append_sheet(wb, wsS, 'Summary');
+  const used = new Set();
+  for (const g of groups) {
+    const rows = g.rows.map(r => { const o = {}; for (const [h, f] of g.columns) o[h] = f(r); return o; });
+    let base = g.key.replace(/_/g, ' ').slice(0, 28), name = base, i = 2;
+    while (used.has(name)) name = `${base} ${i++}`.slice(0, 31);
+    used.add(name);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), name);
+  }
+  XLSX.writeFile(wb, `${period} ${label} Issues.xlsx`);
+}
+
+// =====================================================================
 //  STEP 3 PROCESS
 // =====================================================================
 async function processStep3() {
   hideError(3);
   show('progress3');
-  hide('stats3');
+  hide('stats3'); hide('dq3');
   document.getElementById('preview-tabs3').style.display = 'none';
   document.getElementById('btn-process3').disabled = true;
   document.getElementById('btn-export3').disabled  = true;
@@ -1592,79 +2555,29 @@ async function processStep3() {
   setProgress(3, 10);
 
   try {
-    // --- Parse SKU list ---
-    const skuMap      = new Map(); // exact prod_code  -> sku data
-    const skuMapStrip = new Map(); // leading-zero-stripped code -> sku data (fallback)
-    {
-      const wb   = XLSX.read(s3.skuFile.buffer, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-      const h = rows[0].map(v => String(v).trim().toLowerCase());
-      // Priority finder: tries exact matches first, then partial — ensures Step 1
-      // format (prod_desc1, sell_price) and legacy format (desc) both work.
-      const findCol = (...kws) => {
-        for (const kw of kws) { const i = h.findIndex(v => v === kw);           if (i !== -1) return i; }
-        for (const kw of kws) { const i = h.findIndex(v => v.startsWith(kw));   if (i !== -1) return i; }
-        for (const kw of kws) { const i = h.findIndex(v => v.includes(kw));     if (i !== -1) return i; }
-        return -1;
-      };
-      const iCode  = findCol('prod_code', 'plu_code', 'plu', 'code');
-      const iDesc  = findCol('prod_desc1', 'prod_desc', 'desc', 'description', 'name');
-      const iCost  = findCol('unit_cost', 'cost');
-      const iSellP = findCol('sell_price', 'selling_price', 'price');
-      const iSup   = findCol('sup_code', 'supplier_code');
-      const iSupD  = findCol('sup_desc', 'supplier');
-      const iDept  = findCol('dept_code', 'department_code');
-      const iDeptD = findCol('dept_desc', 'department');
-      const iWhole = findCol('whole_code');
-      const iUom   = findCol('uom_code', 'uom');
-      const iWP    = findCol('wholeprice', 'whole_price');
-
-      for (let r = 1; r < rows.length; r++) {
-        const row  = rows[r];
-        const code = String(row[iCode] ?? '').trim();
-        if (!code) continue;
-        const entry = {
-          desc:       iDesc  !== -1 ? String(row[iDesc]  ?? '').trim() : '',
-          unit_cost:  iCost  !== -1 ? parseNum(row[iCost])  : 0,
-          sell_price: iSellP !== -1 ? parseNum(row[iSellP]) : null,
-          sup_code:   iSup   !== -1 ? String(row[iSup]   ?? '').trim() : '',
-          sup_desc:   iSupD  !== -1 ? String(row[iSupD]  ?? '').trim() : '',
-          dept_code:  iDept  !== -1 ? String(row[iDept]  ?? '').trim() : '',
-          dept_desc:  iDeptD !== -1 ? String(row[iDeptD] ?? '').trim() : '',
-          whole_code: iWhole !== -1 ? String(row[iWhole] ?? '').trim() : '',
-          uom_code:   iUom   !== -1 ? String(row[iUom]   ?? '').trim() : '',
-          wholeprice: iWP    !== -1 ? parseNum(row[iWP])   : null,
-        };
-        skuMap.set(code, entry);
-        // secondary map keyed by stripped code — only store first occurrence
-        const stripped = code.replace(/^0+/, '') || '0';
-        if (!skuMapStrip.has(stripped)) skuMapStrip.set(stripped, entry);
-      }
-    }
-
-    // Lookup helper: exact first, then leading-zero-tolerant fallback
-    const skuLookup = plu => {
-      if (skuMap.has(plu)) return skuMap.get(plu);
-      const stripped = plu.replace(/^0+/, '') || '0';
-      return skuMapStrip.get(stripped) ?? null;
-    };
+    // --- Parse SKU list (shared core) ---
+    const { skuMap, skuLookup, duplicates, blankRows } = parseSkuMaster(s3.skuFile.buffer, s3.skuFile.name);
 
     setProgressLbl(3, 'Loading monthly summary…');
     setProgress(3, 40);
 
-    // --- Parse monthly sales summary ---
+    // --- Parse monthly sales summary (accepts a plain summary OR a P&L export) ---
     const salesRows = [];
     {
-      const wb   = XLSX.read(s3.salesFile.buffer, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const rows = readSheetRows(s3.salesFile.buffer, s3.salesFile.name);
       if (rows.length < 2) throw new Error('Monthly summary file appears empty.');
 
-      const { pluIdx, descIdx, qtyIdx, amtIdx } = detectColumns(rows[0]);
+      // keyword-priority finder (picks the best column even if several could match)
+      const h = rows[0].map(v => String(v ?? '').trim().toLowerCase());
+      const pick = (...kws) => { for (const k of kws) { const i = h.findIndex(v => v.includes(k)); if (i !== -1) return i; } return -1; };
+      const pluIdx  = pick('plu code', 'plu');
+      const descIdx = pick('description', 'desc');
+      const qtyIdx  = pick('total qty', 'qty');
+      // realized sales amount: plain summary = "Total Amount"; P&L export = "Revenue (Realized)";
+      // fall back to plain "Revenue" (list) if that's the only revenue column present.
+      const amtIdx  = pick('total amount', 'total amt', 'revenue (realized)', 'realized', 'amount', 'amt', 'revenue');
       if (pluIdx === -1 || qtyIdx === -1 || amtIdx === -1)
-        throw new Error('Monthly summary: required columns not found.');
+        throw new Error('Monthly summary: could not find PLU / Qty / Amount columns. Upload a monthly summary or a P&L export.');
 
       for (let r = 1; r < rows.length; r++) {
         const row = rows[r];
@@ -1682,55 +2595,11 @@ async function processStep3() {
     setProgressLbl(3, 'Joining SKU data…');
     setProgress(3, 75);
 
-    // --- Join ---
-    s3.data = salesRows.map(s => {
-      const sku  = skuLookup(s.plu);
-      const cost = sku ? sku.unit_cost : 0;
-      const cogs = cost * s.qty;
-      return {
-        plu:        s.plu,
-        desc:       s.desc,
-        qty:        s.qty,
-        amt:        s.amt,
-        unit_cost:  sku ? cost : null,
-        sell_price: sku ? sku.sell_price : null,
-        cogs:       sku ? cogs : null,
-        profit:     sku ? (s.amt - cogs) : null,
-        sup_code:   sku ? sku.sup_code   : '',
-        sup_desc:   sku ? sku.sup_desc   : '',
-        dept_code:  sku ? sku.dept_code  : '',
-        dept_desc:  sku ? sku.dept_desc  : '',
-        whole_code: sku ? sku.whole_code : '',
-        uom_code:   sku ? sku.uom_code   : '',
-        wholeprice: sku ? sku.wholeprice : null,
-        matched:    sku !== null,
-      };
-    });
-
-    // --- Unsold SKUs ---
-    const soldPluSet = new Set();
-    for (const s of salesRows) {
-      soldPluSet.add(s.plu);
-      soldPluSet.add(s.plu.replace(/^0+/, '') || '0');
-    }
-    s3.unsold = [];
-    for (const [code, entry] of skuMap) {
-      const stripped = code.replace(/^0+/, '') || '0';
-      if (!soldPluSet.has(code) && !soldPluSet.has(stripped)) {
-        s3.unsold.push({
-          plu:        code,
-          desc:       entry.desc,
-          sup_code:   entry.sup_code,
-          sup_desc:   entry.sup_desc,
-          dept_code:  entry.dept_code,
-          dept_desc:  entry.dept_desc,
-          unit_cost:  entry.unit_cost,
-          sell_price: entry.sell_price,
-          uom_code:   entry.uom_code,
-          wholeprice: entry.wholeprice,
-        });
-      }
-    }
+    // --- Join + derived metrics (shared core) ---
+    const { data, unsold } = buildPnlData(salesRows, skuMap, skuLookup);
+    computePnlDerived(data);
+    s3.data   = data;
+    s3.unsold = unsold;
 
     setProgress(3, 100);
     hide('progress3');
@@ -1738,6 +2607,8 @@ async function processStep3() {
     renderStep3Tables();
     document.getElementById('preview-tabs3').style.display = 'block';
     document.getElementById('btn-export3').disabled = false;
+    dqData[3] = computeIssues(data, { duplicates, blankRows });
+    renderDqPanel(3, dqData[3]);
 
   } catch (err) {
     hide('progress3');
@@ -1751,139 +2622,149 @@ async function processStep3() {
 //  STEP 3 STATS
 // =====================================================================
 function renderStep3Stats() {
-  const matched   = s3.data.filter(r => r.matched).length;
-  const unmatched = s3.data.length - matched;
-  const revenue   = s3.data.reduce((a, r) => a + r.amt, 0);
-  const cogs      = s3.data.reduce((a, r) => a + (r.cogs   ?? 0), 0);
-  const profit    = s3.data.reduce((a, r) => a + (r.profit ?? 0), 0);
-
-  document.getElementById('s3-matched').textContent   = matched.toLocaleString();
-  document.getElementById('s3-unmatched').textContent = unmatched.toLocaleString();
-  document.getElementById('s3-revenue').textContent   = revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  document.getElementById('s3-cogs').textContent      = cogs.toLocaleString(undefined,    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  document.getElementById('s3-profit').textContent    = profit.toLocaleString(undefined,  { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  document.getElementById('stats3').style.display     = 'flex';
+  const revenue = s3.data.reduce((a, r) => a + r.amt, 0);
+  document.getElementById('s3-amt').textContent  = revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('stats3').style.display = 'flex';
 }
 
 // =====================================================================
 //  STEP 3 TABLES
 // =====================================================================
-function renderStep3Tables() {
-  renderPane3a();
-  renderPane3b();
+// =====================================================================
+//  P&L RENDERERS  (generic — shared by Step 2 and Step 3)
+//  Primary view = SKU LIST price method; Secondary = Realized + deviation
+// =====================================================================
+function fmt(v, dec = 2) {
+  if (v === null || v === undefined || v === '') return '—';
+  return Number(v).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
-function sortData3(data, col, asc) {
+function sortPnl(data, col, asc) {
   return [...data].sort((a, b) => {
-    let va, vb;
-    if (col === 'margin') {
-      va = (a.profit !== null && a.amt) ? a.profit / a.amt * 100 : null;
-      vb = (b.profit !== null && b.amt) ? b.profit / b.amt * 100 : null;
-      va = va ?? -Infinity;
-      vb = vb ?? -Infinity;
-    } else {
-      va = a[col] ?? '';
-      vb = b[col] ?? '';
-    }
+    let va = a[col] ?? '';
+    let vb = b[col] ?? '';
     if (typeof va === 'string') va = va.toLowerCase();
     if (typeof vb === 'string') vb = vb.toLowerCase();
     return (va < vb ? -1 : va > vb ? 1 : 0) * (asc ? 1 : -1);
   });
 }
 
-function fmt(v, dec = 2) {
-  if (v === null || v === undefined || v === '') return '—';
-  return Number(v).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+// --- PRIMARY: SKU list price P&L (14 columns) ---
+function renderPnlPrimary(ctx) {
+  const c = ctx.prim;
+  const data = sortPnl(ctx.data, c.col, c.asc);
+  document.getElementById(c.tbody).innerHTML = data.map(r => {
+    const abcClass = r.abc === 'A' ? 'abc-a' : r.abc === 'B' ? 'abc-b' : 'abc-c';
+    const lpClass  = r.list_profit === null ? '' : r.list_profit >= 0 ? 'profit-pos' : 'profit-neg';
+    const lmClass  = r.list_margin === null ? '' : r.list_margin >= 0 ? 'profit-pos' : 'profit-neg';
+    const lpcClass = r.list_profit_contrib === null ? '' : r.list_profit_contrib >= 0 ? 'profit-pos' : 'profit-neg';
+    const sellCell = r.noPrice
+      ? `<span class="profit-neg" title="No selling price in SKU list">&mdash; &#9888;</span>`
+      : (r.sell_price !== null ? fmt(r.sell_price) : '&mdash;');
+    const revCell  = r.noPrice
+      ? `<span class="profit-neg" title="No selling price in SKU list — revenue treated as 0">0.00 &#9888;</span>`
+      : (r.list_revenue !== null ? fmt(r.list_revenue) : '&mdash;');
+    const discTag = r.isDiscount ? ' <span class="sev sev-info" style="padding:1px 6px;font-size:0.62rem;">DISCOUNT</span>' : '';
+    return `<tr>
+      <td>${escHtml(r.plu)}</td>
+      <td>${escHtml(r.desc)}${discTag}</td>
+      <td style="text-align:center"><span class="abc-badge ${abcClass}">${r.abc ?? '&mdash;'}</span></td>
+      <td>${escHtml(r.dept_desc)}</td>
+      <td>${escHtml(r.sup_desc)}</td>
+      <td style="text-align:right">${fmt(r.qty, 0)}</td>
+      <td style="text-align:right">${fmt(r.unit_cost)}</td>
+      <td style="text-align:right">${sellCell}</td>
+      <td style="text-align:right">${fmt(r.cogs)}</td>
+      <td style="text-align:right">${revCell}</td>
+      <td style="text-align:right" class="${lpClass}">${r.list_profit !== null ? fmt(r.list_profit) : '&mdash;'}</td>
+      <td style="text-align:right" class="${lmClass}">${r.list_margin !== null ? r.list_margin.toFixed(1) + '%' : '&mdash;'}</td>
+      <td style="text-align:right">${r.list_sales_mix !== null ? r.list_sales_mix.toFixed(2) + '%' : '&mdash;'}</td>
+      <td style="text-align:right" class="${lpcClass}">${r.list_profit_contrib !== null ? r.list_profit_contrib.toFixed(2) + '%' : '&mdash;'}</td>
+    </tr>`;
+  }).join('');
+
+  const tQty  = data.reduce((a, r) => a + r.qty, 0);
+  const tCogs = data.reduce((a, r) => a + (r.cogs ?? 0), 0);
+  const tRev  = data.reduce((a, r) => a + (r.list_revenue ?? 0), 0);
+  const tPft  = data.reduce((a, r) => a + (r.list_profit ?? 0), 0);
+  const tMargin = tRev ? tPft / tRev * 100 : null;
+  const cntA = data.filter(r => r.abc === 'A').length;
+  const cntB = data.filter(r => r.abc === 'B').length;
+  const cntC = data.filter(r => r.abc === 'C').length;
+  const pc = tPft >= 0 ? '#3a7a6a' : '#dc2626';
+  const mc = tMargin === null ? '' : tMargin >= 0 ? '#3a7a6a' : '#dc2626';
+  document.getElementById(c.tfoot).innerHTML = `<tr>
+    <td colspan="2"><strong>TOTAL</strong></td>
+    <td style="text-align:center;font-size:0.74rem;color:#475569">A:${cntA} B:${cntB} C:${cntC}</td>
+    <td></td><td></td>
+    <td style="text-align:right">${fmt(tQty, 0)}</td>
+    <td></td><td></td>
+    <td style="text-align:right;color:#4C8577">${fmt(tCogs)}</td>
+    <td style="text-align:right;color:#4C8577">${fmt(tRev)}</td>
+    <td style="text-align:right;color:${pc}">${fmt(tPft)}</td>
+    <td style="text-align:right;color:${mc}">${tMargin !== null ? tMargin.toFixed(1) + '%' : '&mdash;'}</td>
+    <td style="text-align:right;color:#4C8577">100%</td>
+    <td style="text-align:right;color:${pc}">100%</td>
+  </tr>`;
+  document.getElementById(c.count).textContent = `${data.length.toLocaleString()} SKUs`;
 }
 
-function renderPane3a() {
-  // Pre-compute derived metrics on full dataset
-  const totalAmt    = s3.data.reduce((a, r) => a + r.amt, 0);
-  const totalQty    = s3.data.reduce((a, r) => a + r.qty, 0);
-  const totalProfit = s3.data.reduce((a, r) => a + (r.profit ?? 0), 0);
-
-  // ABC classification: sort by revenue desc, assign cumulative buckets
-  const byAmt = [...s3.data].sort((a, b) => b.amt - a.amt);
-  let cumAmt = 0;
-  for (const r of byAmt) {
-    cumAmt += r.amt;
-    const pct = totalAmt ? cumAmt / totalAmt : 0;
-    r.abc = pct <= 0.70 ? 'A' : pct <= 0.90 ? 'B' : 'C';
-  }
-  // Store per-row derived fields so sortData3 can access them
-  for (const r of s3.data) {
-    r.avg_price      = r.qty     ? r.amt / r.qty : null;
-    r.sales_mix      = totalAmt  ? r.amt / totalAmt * 100 : null;
-    r.profit_contrib = totalProfit ? (r.profit ?? 0) / totalProfit * 100 : null;
-  }
-
-  const data = sortData3(s3.data, s3.sortCol3a, s3.sortAsc3a);
-  document.getElementById('tbody3a').innerHTML = data.map(r => {
-    const margin = (r.profit !== null && r.amt) ? r.profit / r.amt * 100 : null;
-    const profitClass  = r.profit === null ? '' : r.profit >= 0 ? 'profit-pos' : 'profit-neg';
-    const marginClass  = margin === null ? '' : margin >= 0 ? 'profit-pos' : 'profit-neg';
-    const pcClass      = r.profit_contrib === null ? '' : r.profit_contrib >= 0 ? 'profit-pos' : 'profit-neg';
-    const abcClass     = r.abc === 'A' ? 'abc-a' : r.abc === 'B' ? 'abc-b' : 'abc-c';
+// --- SECONDARY: Realized price + deviation from SKU list (12 columns) ---
+function renderPnlDeviation(ctx) {
+  const c = ctx.dev;
+  const data = sortPnl(ctx.data, c.col, c.asc);
+  document.getElementById(c.tbody).innerHTML = data.map(r => {
+    const pdClass = r.price_dev === null ? '' : r.price_dev >= 0 ? 'profit-pos' : 'profit-neg';
+    const vClass  = r.variance  === null ? '' : r.variance  >= 0 ? 'profit-pos' : 'profit-neg';
+    const mClass  = r.margin    === null ? '' : r.margin    >= 0 ? 'profit-pos' : 'profit-neg';
+    const pClass  = r.profit    === null ? '' : r.profit    >= 0 ? 'profit-pos' : 'profit-neg';
+    const lpClass = r.list_profit === null ? '' : r.list_profit >= 0 ? 'profit-pos' : 'profit-neg';
     return `<tr>
       <td>${escHtml(r.plu)}</td>
       <td>${escHtml(r.desc)}</td>
       <td style="text-align:right">${fmt(r.qty, 0)}</td>
-      <td style="text-align:right">${fmt(r.amt)}</td>
-      <td style="text-align:right">${fmt(r.unit_cost)}</td>
       <td style="text-align:right">${r.sell_price !== null ? fmt(r.sell_price) : '&mdash;'}</td>
-      <td style="text-align:right">${fmt(r.cogs)}</td>
-      <td style="text-align:right" class="${profitClass}">${fmt(r.profit)}</td>
-      <td style="text-align:right" class="${marginClass}">${margin !== null ? margin.toFixed(1) + '%' : '&mdash;'}</td>
       <td style="text-align:right">${r.avg_price !== null ? fmt(r.avg_price) : '&mdash;'}</td>
-      <td style="text-align:right">${r.sales_mix !== null ? r.sales_mix.toFixed(2) + '%' : '&mdash;'}</td>
-      <td style="text-align:right" class="${pcClass}">${r.profit_contrib !== null ? r.profit_contrib.toFixed(2) + '%' : '&mdash;'}</td>
-      <td style="text-align:center"><span class="abc-badge ${abcClass}">${r.abc ?? '&mdash;'}</span></td>
-      <td>${escHtml(r.sup_code)}</td>
-      <td>${escHtml(r.sup_desc)}</td>
-      <td>${escHtml(r.dept_code)}</td>
-      <td>${escHtml(r.dept_desc)}</td>
-      <td>${escHtml(r.whole_code)}</td>
-      <td>${escHtml(r.uom_code)}</td>
-      <td style="text-align:right">${fmt(r.wholeprice)}</td>
+      <td style="text-align:right" class="${pdClass}">${r.price_dev !== null ? fmt(r.price_dev) : '&mdash;'}</td>
+      <td style="text-align:right">${r.list_revenue !== null ? fmt(r.list_revenue) : '&mdash;'}</td>
+      <td style="text-align:right">${fmt(r.amt)}</td>
+      <td style="text-align:right" class="${lpClass}">${r.list_profit !== null ? fmt(r.list_profit) : '&mdash;'}</td>
+      <td style="text-align:right" class="${pClass}">${r.profit !== null ? fmt(r.profit) : '&mdash;'}</td>
+      <td style="text-align:right" class="${vClass}">${r.variance !== null ? fmt(r.variance) : '&mdash;'}</td>
+      <td style="text-align:right" class="${mClass}">${r.margin !== null ? r.margin.toFixed(1) + '%' : '&mdash;'}</td>
     </tr>`;
   }).join('');
 
-  const tAmt    = data.reduce((a, r) => a + r.amt, 0);
-  const tQty    = data.reduce((a, r) => a + r.qty, 0);
-  const tCogs   = data.reduce((a, r) => a + (r.cogs   ?? 0), 0);
-  const tProfit = data.reduce((a, r) => a + (r.profit ?? 0), 0);
-  const tMargin = tAmt ? tProfit / tAmt * 100 : null;
-  const tAvgPrice = tQty ? tAmt / tQty : null;
-  const cntA = data.filter(r => r.abc === 'A').length;
-  const cntB = data.filter(r => r.abc === 'B').length;
-  const cntC = data.filter(r => r.abc === 'C').length;
-  const pc = tProfit >= 0 ? '#3a7a6a' : '#dc2626';
-  const mc = tMargin === null ? '' : tMargin >= 0 ? '#3a7a6a' : '#dc2626';
-  document.getElementById('tfoot3a').innerHTML = `
-    <tr>
-      <td colspan="3"><strong>TOTAL</strong></td>
-      <td style="text-align:right;color:#4C8577">${fmt(tAmt)}</td>
-      <td></td><td></td>
-      <td style="text-align:right;color:#4C8577">${fmt(tCogs)}</td>
-      <td style="text-align:right;color:${pc}">${fmt(tProfit)}</td>
-      <td style="text-align:right;color:${mc}">${tMargin !== null ? tMargin.toFixed(1) + '%' : '&mdash;'}</td>
-      <td style="text-align:right">${tAvgPrice !== null ? fmt(tAvgPrice) : '&mdash;'}</td>
-      <td style="text-align:right;color:#4C8577">100%</td>
-      <td style="text-align:right;color:${pc}">100%</td>
-      <td style="text-align:center;font-size:0.78rem;color:#475569">A:${cntA} B:${cntB} C:${cntC}</td>
-      <td colspan="7"></td>
-    </tr>`;
-  document.getElementById('row-count3a').textContent = `${data.length.toLocaleString()} SKUs`;
+  const tQty     = data.reduce((a, r) => a + r.qty, 0);
+  const tListRev = data.reduce((a, r) => a + (r.list_revenue ?? 0), 0);
+  const tAmt     = data.reduce((a, r) => a + r.amt, 0);
+  const tListPft = data.reduce((a, r) => a + (r.list_profit ?? 0), 0);
+  const tPft     = data.reduce((a, r) => a + (r.profit ?? 0), 0);
+  const tVar     = data.reduce((a, r) => a + (r.variance ?? 0), 0);
+  const tMargin  = tAmt ? tPft / tAmt * 100 : null;
+  const tAvg     = tQty ? tAmt / tQty : null;
+  const vc = tVar >= 0 ? '#3a7a6a' : '#dc2626';
+  document.getElementById(c.tfoot).innerHTML = `<tr>
+    <td colspan="2"><strong>TOTAL</strong></td>
+    <td style="text-align:right">${fmt(tQty, 0)}</td>
+    <td></td>
+    <td style="text-align:right">${tAvg !== null ? fmt(tAvg) : '&mdash;'}</td>
+    <td></td>
+    <td style="text-align:right;color:#4C8577">${fmt(tListRev)}</td>
+    <td style="text-align:right;color:#4C8577">${fmt(tAmt)}</td>
+    <td style="text-align:right">${fmt(tListPft)}</td>
+    <td style="text-align:right">${fmt(tPft)}</td>
+    <td style="text-align:right;color:${vc}">${fmt(tVar)}</td>
+    <td style="text-align:right">${tMargin !== null ? tMargin.toFixed(1) + '%' : '&mdash;'}</td>
+  </tr>`;
+  document.getElementById(c.count).textContent = `${data.length.toLocaleString()} SKUs`;
 }
 
-function renderPane3b() {
-  const data = [...s3.unsold].sort((a, b) => {
-    let va = a[s3.sortCol3b] ?? '', vb = b[s3.sortCol3b] ?? '';
-    if (typeof va === 'string') va = va.toLowerCase();
-    if (typeof vb === 'string') vb = vb.toLowerCase();
-    return (va < vb ? -1 : va > vb ? 1 : 0) * (s3.sortAsc3b ? 1 : -1);
-  });
-  document.getElementById('tbody3b').innerHTML = data.map(r => `<tr>
+// --- Non-moving / unsold SKUs (9 columns) ---
+function renderPnlUnsold(ctx) {
+  const c = ctx.uns;
+  const data = sortPnl(ctx.unsold, c.col, c.asc);
+  document.getElementById(c.tbody).innerHTML = data.map(r => `<tr>
     <td>${escHtml(r.plu)}</td>
     <td>${escHtml(r.desc)}</td>
     <td>${escHtml(r.sup_code)}</td>
@@ -1894,146 +2775,227 @@ function renderPane3b() {
     <td>${escHtml(r.uom_code)}</td>
     <td style="text-align:right">${fmt(r.wholeprice)}</td>
   </tr>`).join('');
-  document.getElementById('tfoot3b').innerHTML = '';
-  document.getElementById('row-count3b').textContent = `${data.length.toLocaleString()} non-moving SKUs`;
+  document.getElementById(c.count).textContent = `${data.length.toLocaleString()} non-moving SKUs`;
+}
+
+function renderPnlView(ctx) {
+  renderPnlPrimary(ctx);
+  renderPnlDeviation(ctx);
+  renderPnlUnsold(ctx);
+}
+
+// Wire sortable headers for a P&L context's three tables.
+function initPnlSort(ctx) {
+  const wire = (cfg, renderFn) => {
+    document.querySelectorAll(`thead th[data-page="${cfg.page}"]`).forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (!col) return;
+        if (cfg.col === col) cfg.asc = !cfg.asc;
+        else { cfg.col = col; cfg.asc = true; }
+        document.querySelectorAll(`thead th[data-page="${cfg.page}"]`).forEach(t => {
+          t.classList.remove('sorted');
+          const ic = t.querySelector('.sort-icon'); if (ic) ic.textContent = '↕';
+        });
+        th.classList.add('sorted');
+        const ic = th.querySelector('.sort-icon'); if (ic) ic.textContent = cfg.asc ? '↑' : '↓';
+        renderFn(ctx);
+      });
+    });
+  };
+  wire(ctx.prim, renderPnlPrimary);
+  wire(ctx.dev,  renderPnlDeviation);
+  wire(ctx.uns,  renderPnlUnsold);
+}
+
+// Scoped tab switching: affects only tabs/panes inside the given container.
+function initPnlTabs(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.preview-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.preview-tab-btn').forEach(b => b.classList.remove('active'));
+      container.querySelectorAll('.preview-pane').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+      btn.classList.add('active');
+      const pane = document.getElementById(btn.dataset.pane);
+      pane.classList.add('active');
+      pane.style.display = 'block';
+    });
+  });
 }
 
 // =====================================================================
-//  STEP 3 EXPORT
+//  STEP 3 TABLE RENDER  (context pnl3 declared near top with pnl2)
 // =====================================================================
+function renderStep3Tables() {
+  pnl3.data   = s3.data;
+  pnl3.unsold = s3.unsold;
+  renderPnlView(pnl3);
+}
+
+// Period strings for file names — built from the selected From/To dates (the period),
+// NOT an auto time-stamp.
+function todayISO() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+}
+// Weekly: same month -> 'YYYY-MM-DD_DD' (e.g. 2026-05-05_11); crosses months -> 'YYYY-MM-DD_YYYY-MM-DD'.
+function periodWeekly(from, to) {
+  if (from && to) {
+    const fp = from.split('-'), tp = to.split('-');
+    if (fp[0] === tp[0] && fp[1] === tp[1]) return `${from}_${tp[2]}`;
+    return `${from}_${to}`;
+  }
+  return from || to || todayISO();
+}
+// Monthly / Re-price: 'YYYY-MM' taken from the From date (fallback To, then today).
+function periodMonthly(from, to) {
+  return (from || to || todayISO()).slice(0, 7);
+}
+
+// =====================================================================
+//  P&L EXPORT  (generic — shared by Step 2 and Step 3)
+//  Produces TWO separate files:
+//    File 1 — P&L analysis: Page 1 = SKU-list P&L (primary),
+//             Page 2 = Realized price & deviation, Page 3 = Summary
+//    File 2 — Non-Moving (unsold) stock list
+// =====================================================================
+function exportPnlFiles(data, unsold, period, fmtType, label) {
+  computePnlDerived(data); // make sure derived metrics are current
+  const pct2 = v => (v !== null && v !== undefined) ? parseFloat(Number(v).toFixed(2)) : '';
+  const num  = v => (v !== null && v !== undefined && v !== '') ? parseFloat(Number(v).toFixed(2)) : '';
+
+  // ===================== FILE 1: P&L ANALYSIS =====================
+  const wb1 = XLSX.utils.book_new();
+
+  // --- Page 1: SKU List Price P&L (PRIMARY) ---
+  const primRows = data.map(r => ({
+    'PLU Code':         r.plu,
+    'Description':      r.desc,
+    'ABC':             r.abc ?? '',
+    'Department':       r.dept_desc,
+    'Supplier':         r.sup_desc,
+    'Total Qty':        r.qty,
+    'Unit Cost':        r.unit_cost ?? '',
+    'Sell Price':       r.sell_price ?? '',
+    'COGS':             num(r.cogs),
+    'Revenue':          num(r.list_revenue),
+    'Profit':           num(r.list_profit),
+    'Margin %':         pct2(r.list_margin),
+    'Sales Mix %':      pct2(r.list_sales_mix),
+    'Profit Contrib %': pct2(r.list_profit_contrib),
+    // Realized figures retained so the Monthly step can re-aggregate from this one sheet.
+    'Revenue (Realized)': num(r.amt),
+    'Profit (Realized)':  num(r.profit),
+    'Price Missing':    r.noPrice ? 'YES' : '',
+  }));
+  const wsP = XLSX.utils.json_to_sheet(primRows);
+  wsP['!cols'] = [{wch:20},{wch:40},{wch:6},{wch:20},{wch:30},{wch:11},{wch:11},{wch:11},{wch:13},{wch:14},{wch:14},{wch:11},{wch:13},{wch:16},{wch:16},{wch:16},{wch:13}];
+  XLSX.utils.book_append_sheet(wb1, wsP, 'P&L (SKU List Price)');
+
+  // --- Page 2: Realized price & deviation (SECONDARY) ---
+  const devRows = data.map(r => ({
+    'PLU Code':             r.plu,
+    'Description':          r.desc,
+    'Total Qty':            r.qty,
+    'Sell Price (List)':    r.sell_price ?? '',
+    'Avg Price (Realized)': r.avg_price !== null ? num(r.avg_price) : '',
+    'Price Deviation':      r.price_dev !== null ? num(r.price_dev) : '',
+    'Revenue (List)':       num(r.list_revenue),
+    'Revenue (Realized)':   num(r.amt),
+    'Profit (List)':        num(r.list_profit),
+    'Profit (Realized)':    num(r.profit),
+    'Profit Variance':      num(r.variance),
+    'Realized Margin %':    r.margin !== null ? pct2(r.margin) : '',
+  }));
+  const wsD = XLSX.utils.json_to_sheet(devRows);
+  wsD['!cols'] = [{wch:20},{wch:40},{wch:11},{wch:14},{wch:16},{wch:14},{wch:15},{wch:16},{wch:14},{wch:16},{wch:14},{wch:15}];
+  XLSX.utils.book_append_sheet(wb1, wsD, 'Realized & Deviation');
+
+  // --- Page 3: Summary (priced from SKU list — the primary basis) ---
+  const sRows = [];
+  const totRev  = data.reduce((a,r)=>a+(r.list_revenue ?? 0),0);
+  const totCOGS = data.reduce((a,r)=>a+(r.cogs ?? 0),0);
+  const totProf = data.reduce((a,r)=>a+(r.list_profit ?? 0),0);
+  const totQty  = data.reduce((a,r)=>a+r.qty,0);
+  const margin  = totRev>0 ? totProf/totRev*100 : 0;
+  const negItems= data.filter(r=>r.list_profit!=null && r.list_profit<0);
+  sRows.push({'Section':'KEY METRICS (SKU LIST PRICE)','Metric':'List Revenue',  'Value':parseFloat(totRev.toFixed(2))});
+  sRows.push({'Section':'','Metric':'Total COGS',        'Value':parseFloat(totCOGS.toFixed(2))});
+  sRows.push({'Section':'','Metric':'List Profit',       'Value':parseFloat(totProf.toFixed(2))});
+  sRows.push({'Section':'','Metric':'List Margin %',     'Value':parseFloat(margin.toFixed(2))});
+  sRows.push({'Section':'','Metric':'Total Units Sold',  'Value':parseFloat(totQty.toFixed(0))});
+  sRows.push({'Section':'','Metric':'Total SKUs',        'Value':data.length});
+  sRows.push({'Section':'','Metric':'SKUs Below Cost',   'Value':negItems.length});
+  sRows.push({'Section':'','Metric':'SKUs Missing Price','Value':data.filter(r=>r.noPrice).length});
+  sRows.push({'Section':'','Metric':'Non-Moving SKUs',   'Value':unsold.length});
+  const discounts = data.filter(r=>r.isDiscount);
+  const totDisc = discounts.reduce((a,r)=>a+r.amt,0);
+  sRows.push({'Section':'','Metric':'Total Discounts (S.C.D./P.W.D.)','Value':parseFloat(totDisc.toFixed(2))});
+  sRows.push({'Section':'','Metric':'','Value':''});
+  // Discounts breakdown (cashier-applied social-benefit schemes — not in SKU list)
+  if (discounts.length) {
+    sRows.push({'Section':'DISCOUNTS (social-benefit schemes)','Metric':'PLU','Value':'Description','Extra1':'Qty','Extra2':'Amount'});
+    for (const r of discounts) sRows.push({'Section':'','Metric':r.plu,'Value':r.desc,'Extra1':r.qty,'Extra2':parseFloat((r.amt||0).toFixed(2))});
+    sRows.push({'Section':'','Metric':'','Value':''});
+  }
+  // Department rollup (by list revenue)
+  const deptMap=new Map();
+  for(const r of data){const k=r.dept_desc||'Unassigned';if(!deptMap.has(k))deptMap.set(k,{skus:0,qty:0,rev:0,cogs:0,profit:0});const d=deptMap.get(k);d.skus++;d.qty+=r.qty;d.rev+=r.list_revenue??0;d.cogs+=r.cogs??0;d.profit+=r.list_profit??0;}
+  const depts=[...deptMap.entries()].map(([n,v])=>({name:n,...v,margin:v.rev>0?v.profit/v.rev*100:0})).sort((a,b)=>b.rev-a.rev);
+  sRows.push({'Section':'DEPARTMENT SUMMARY','Metric':'Department','Value':'Revenue','Extra1':'COGS','Extra2':'Profit','Extra3':'Margin %','Extra4':'SKUs'});
+  for(const d of depts){sRows.push({'Section':'','Metric':d.name,'Value':parseFloat(d.rev.toFixed(2)),'Extra1':parseFloat(d.cogs.toFixed(2)),'Extra2':parseFloat(d.profit.toFixed(2)),'Extra3':parseFloat(d.margin.toFixed(2)),'Extra4':d.skus});}
+  sRows.push({'Section':'','Metric':'','Value':''});
+  // Top 10 by list profit
+  const top10=[...data].filter(r=>r.list_profit!=null).sort((a,b)=>b.list_profit-a.list_profit).slice(0,10);
+  sRows.push({'Section':'TOP 10 SKUs BY PROFIT','Metric':'PLU','Value':'Description','Extra1':'Revenue','Extra2':'Profit','Extra3':'Margin %'});
+  for(const r of top10){const m=r.list_profit!=null&&r.list_revenue>0?r.list_profit/r.list_revenue*100:null;sRows.push({'Section':'','Metric':r.plu,'Value':r.desc,'Extra1':parseFloat((r.list_revenue??0).toFixed(2)),'Extra2':parseFloat((r.list_profit??0).toFixed(2)),'Extra3':m!=null?parseFloat(m.toFixed(2)):''});}
+  sRows.push({'Section':'','Metric':'','Value':''});
+  // Bottom 10 by list profit
+  const bot10=[...data].filter(r=>r.list_profit!=null).sort((a,b)=>a.list_profit-b.list_profit).slice(0,10);
+  sRows.push({'Section':'BOTTOM 10 SKUs BY PROFIT','Metric':'PLU','Value':'Description','Extra1':'Revenue','Extra2':'Profit','Extra3':'Margin %'});
+  for(const r of bot10){const m=r.list_profit!=null&&r.list_revenue>0?r.list_profit/r.list_revenue*100:null;sRows.push({'Section':'','Metric':r.plu,'Value':r.desc,'Extra1':parseFloat((r.list_revenue??0).toFixed(2)),'Extra2':parseFloat((r.list_profit??0).toFixed(2)),'Extra3':m!=null?parseFloat(m.toFixed(2)):''});}
+  const wsS = XLSX.utils.json_to_sheet(sRows);
+  wsS['!cols'] = [{wch:28},{wch:38},{wch:16},{wch:14},{wch:14},{wch:12},{wch:10}];
+  XLSX.utils.book_append_sheet(wb1, wsS, 'Summary');
+
+  // ===================== FILE 2: NON-MOVING STOCK =====================
+  const wb2 = XLSX.utils.book_new();
+  const unsoldRows = unsold.length
+    ? unsold.map(r => ({
+        'PLU Code':    r.plu,
+        'Description': r.desc,
+        'Sup Code':    r.sup_code,
+        'Supplier':    r.sup_desc,
+        'Dept Code':   r.dept_code,
+        'Department':  r.dept_desc,
+        'Unit Cost':   r.unit_cost  ?? '',
+        'Sell Price':  r.sell_price ?? '',
+        'UOM':         r.uom_code,
+        'Whole Price': r.wholeprice ?? '',
+      }))
+    : [{ 'PLU Code': '', 'Description': 'No non-moving SKUs — every item in the SKU list had sales.' }];
+  const wsU = XLSX.utils.json_to_sheet(unsoldRows);
+  wsU['!cols'] = [{wch:20},{wch:48},{wch:12},{wch:30},{wch:11},{wch:20},{wch:11},{wch:12},{wch:8},{wch:13}];
+  XLSX.utils.book_append_sheet(wb2, wsU, 'Non-Moving SKUs');
+
+  // ===================== DOWNLOAD BOTH =====================
+  if (fmtType === 'csv') {
+    // CSV holds a single sheet only — P&L file exports Page 1 (primary).
+    XLSX.writeFile(wb1, `${period} ${label} PnL.csv`,       { bookType: 'csv' });
+    XLSX.writeFile(wb2, `${period} ${label} NonMoving.csv`, { bookType: 'csv' });
+  } else {
+    XLSX.writeFile(wb1, `${period} ${label} PnL.xlsx`);
+    XLSX.writeFile(wb2, `${period} ${label} NonMoving.xlsx`);
+  }
+}
+
 function exportStep3() {
   const from = document.getElementById('date-from3').value;
   const to   = document.getElementById('date-to3').value;
-  let datePart;
-  if (from && to)  datePart = `${from}_to_${to}`;
-  else if (from)   datePart = `from_${from}`;
-  else if (to)     datePart = `to_${to}`;
-  else             datePart = new Date().toISOString().slice(0, 10);
-
-  const wb = XLSX.utils.book_new();
-
-  // --- Sheet 1: Sales & COGS ---
-  // Ensure derived metrics are current (renderPane3a may not have run yet)
-  const _totAmt = s3.data.reduce((a, r) => a + r.amt, 0);
-  const _totProfit = s3.data.reduce((a, r) => a + (r.profit ?? 0), 0);
-  const _byAmt = [...s3.data].sort((a, b) => b.amt - a.amt);
-  let _cum = 0;
-  for (const r of _byAmt) { _cum += r.amt; const p = _totAmt ? _cum / _totAmt : 0; r.abc = p <= 0.70 ? 'A' : p <= 0.90 ? 'B' : 'C'; }
-  for (const r of s3.data) {
-    r.avg_price      = r.qty    ? r.amt / r.qty : null;
-    r.sales_mix      = _totAmt  ? r.amt / _totAmt * 100 : null;
-    r.profit_contrib = _totProfit ? (r.profit ?? 0) / _totProfit * 100 : null;
-  }
-
-  const sheet1Rows = s3.data.map(r => {
-    const margin = (r.profit !== null && r.amt) ? parseFloat((r.profit / r.amt * 100).toFixed(2)) : '';
-    return {
-      'PLU Code':           r.plu,
-      'Description':        r.desc,
-      'Total Qty':          r.qty,
-      'Total Amount':       r.amt,
-      'Avg Selling Price':  r.avg_price      !== null ? parseFloat(r.avg_price.toFixed(2))      : '',
-      'Unit Cost':          r.unit_cost  ?? '',
-      'Sell Price':         r.sell_price ?? '',
-      'COGS':               r.cogs       ?? '',
-      'Profit':             r.profit    ?? '',
-      'Profit Margin %':    margin,
-      'Sales Mix %':        r.sales_mix      !== null ? parseFloat(r.sales_mix.toFixed(2))      : '',
-      'Profit Contrib %':   r.profit_contrib !== null ? parseFloat(r.profit_contrib.toFixed(2)) : '',
-      'ABC':                r.abc ?? '',
-      'Sup Code':           r.sup_code,
-      'Supplier':           r.sup_desc,
-      'Dept Code':          r.dept_code,
-      'Department':         r.dept_desc,
-      'Whole Code':         r.whole_code,
-      'UOM':                r.uom_code,
-      'Whole Price':        r.wholeprice ?? '',
-    };
-  });
-  const ws1 = XLSX.utils.json_to_sheet(sheet1Rows);
-  ws1['!cols'] = [
-    {wch:20},{wch:40},{wch:12},{wch:14},{wch:16},{wch:11},{wch:14},{wch:14},{wch:16},{wch:12},{wch:15},{wch:6},
-    {wch:12},{wch:30},{wch:11},{wch:20},{wch:14},{wch:8},{wch:13}
-  ];
-  XLSX.utils.book_append_sheet(wb, ws1, 'Sales & COGS');
-
-  // --- Sheet 2: Unsold SKUs ---
-  if (s3.unsold.length > 0) {
-    const sheet2Rows = s3.unsold.map(r => ({
-      'PLU Code':    r.plu,
-      'Description': r.desc,
-      'Sup Code':    r.sup_code,
-      'Supplier':    r.sup_desc,
-      'Dept Code':   r.dept_code,
-      'Department':  r.dept_desc,
-      'Unit Cost':   r.unit_cost  ?? '',
-      'Sell Price':  r.sell_price ?? '',
-      'UOM':         r.uom_code,
-      'Whole Price': r.wholeprice ?? '',
-    }));
-    const ws2 = XLSX.utils.json_to_sheet(sheet2Rows);
-    ws2['!cols'] = [{wch:20},{wch:40},{wch:12},{wch:30},{wch:11},{wch:20},{wch:11},{wch:12},{wch:8},{wch:13}];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Unsold SKUs');
-  }
-
-  // --- Sheet 3: Summary (AI/Looker Studio ready) ---
-  const ws3Rows = [];
-  const _d = s3.data;
-  const _totRev  = _d.reduce((a,r)=>a+r.amt,0);
-  const _totCOGS = _d.reduce((a,r)=>a+(r.cogs??0),0);
-  const _totProf = _d.reduce((a,r)=>a+(r.profit??0),0);
-  const _totQty  = _d.reduce((a,r)=>a+r.qty,0);
-  const _margin  = _totRev>0 ? _totProf/_totRev*100 : 0;
-  const _negItems= _d.filter(r=>r.profit!=null&&r.profit<0);
-
-  // KPIs block
-  ws3Rows.push({'Section':'KEY METRICS','Metric':'Total Revenue',   'Value':parseFloat(_totRev.toFixed(2))});
-  ws3Rows.push({'Section':'',           'Metric':'Total COGS',      'Value':parseFloat(_totCOGS.toFixed(2))});
-  ws3Rows.push({'Section':'',           'Metric':'Gross Profit',    'Value':parseFloat(_totProf.toFixed(2))});
-  ws3Rows.push({'Section':'',           'Metric':'Gross Margin %',  'Value':parseFloat(_margin.toFixed(2))});
-  ws3Rows.push({'Section':'',           'Metric':'Total Units Sold','Value':parseFloat(_totQty.toFixed(0))});
-  ws3Rows.push({'Section':'',           'Metric':'Total SKUs',      'Value':_d.length});
-  ws3Rows.push({'Section':'',           'Metric':'SKUs Below Cost', 'Value':_negItems.length});
-  ws3Rows.push({'Section':'',           'Metric':'Non-Moving SKUs', 'Value':s3.unsold.length});
-  ws3Rows.push({'Section':'','Metric':'','Value':''});
-
-  // Department summary
-  const _deptMap=new Map();
-  for(const r of _d){const k=r.dept_desc||'Unassigned';if(!_deptMap.has(k))_deptMap.set(k,{code:r.dept_code,skus:0,qty:0,rev:0,cogs:0,profit:0});const d=_deptMap.get(k);d.skus++;d.qty+=r.qty;d.rev+=r.amt;d.cogs+=r.cogs??0;d.profit+=r.profit??0;}
-  const _depts=[..._deptMap.entries()].map(([n,v])=>({name:n,...v,margin:v.rev>0?v.profit/v.rev*100:0})).sort((a,b)=>b.rev-a.rev);
-  ws3Rows.push({'Section':'DEPARTMENT SUMMARY','Metric':'Department','Value':'Revenue','Extra1':'COGS','Extra2':'Profit','Extra3':'Margin %','Extra4':'SKUs'});
-  for(const d of _depts){ws3Rows.push({'Section':'','Metric':d.name,'Value':parseFloat(d.rev.toFixed(2)),'Extra1':parseFloat(d.cogs.toFixed(2)),'Extra2':parseFloat(d.profit.toFixed(2)),'Extra3':parseFloat(d.margin.toFixed(2)),'Extra4':d.skus});}
-  ws3Rows.push({'Section':'','Metric':'','Value':''});
-
-  // Top 10 SKUs by revenue
-  const _top10=[..._d].sort((a,b)=>b.amt-a.amt).slice(0,10);
-  ws3Rows.push({'Section':'TOP 10 SKUs BY REVENUE','Metric':'PLU','Value':'Description','Extra1':'Revenue','Extra2':'Profit','Extra3':'Margin %'});
-  for(const r of _top10){const m=r.profit!=null&&r.amt>0?r.profit/r.amt*100:null;ws3Rows.push({'Section':'','Metric':r.plu,'Value':r.desc,'Extra1':parseFloat(r.amt.toFixed(2)),'Extra2':r.profit!=null?parseFloat(r.profit.toFixed(2)):'','Extra3':m!=null?parseFloat(m.toFixed(2)):''});}
-  ws3Rows.push({'Section':'','Metric':'','Value':''});
-
-  // Bottom 10 by profit
-  const _bot10=[..._d].filter(r=>r.profit!=null).sort((a,b)=>a.profit-b.profit).slice(0,10);
-  ws3Rows.push({'Section':'BOTTOM 10 SKUs BY PROFIT','Metric':'PLU','Value':'Description','Extra1':'Revenue','Extra2':'Profit','Extra3':'Margin %'});
-  for(const r of _bot10){const m=r.profit!=null&&r.amt>0?r.profit/r.amt*100:null;ws3Rows.push({'Section':'','Metric':r.plu,'Value':r.desc,'Extra1':parseFloat(r.amt.toFixed(2)),'Extra2':r.profit!=null?parseFloat(r.profit.toFixed(2)):'','Extra3':m!=null?parseFloat(m.toFixed(2)):''});}
-  ws3Rows.push({'Section':'','Metric':'','Value':''});
-
-  // Top 10 suppliers
-  const _supMap=new Map();
-  for(const r of _d){const k=r.sup_desc||'Unknown';if(!_supMap.has(k))_supMap.set(k,{code:r.sup_code,skus:0,rev:0,cogs:0,profit:0});const s=_supMap.get(k);s.skus++;s.rev+=r.amt;s.cogs+=r.cogs??0;s.profit+=r.profit??0;}
-  const _sups=[..._supMap.entries()].map(([n,v])=>({name:n,...v,margin:v.rev>0?v.profit/v.rev*100:0})).sort((a,b)=>b.rev-a.rev).slice(0,10);
-  ws3Rows.push({'Section':'TOP 10 SUPPLIERS','Metric':'Supplier','Value':'Revenue','Extra1':'COGS','Extra2':'Profit','Extra3':'Margin %','Extra4':'SKUs'});
-  for(const s of _sups){ws3Rows.push({'Section':'','Metric':s.name,'Value':parseFloat(s.rev.toFixed(2)),'Extra1':parseFloat(s.cogs.toFixed(2)),'Extra2':parseFloat(s.profit.toFixed(2)),'Extra3':parseFloat(s.margin.toFixed(2)),'Extra4':s.skus});}
-
-  const ws3 = XLSX.utils.json_to_sheet(ws3Rows);
-  ws3['!cols'] = [{wch:22},{wch:38},{wch:16},{wch:14},{wch:14},{wch:12},{wch:10}];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Summary');
-
-  const _fmt3 = document.querySelector('input[name="fmt-step3"]:checked')?.value || 'xlsx';
-  if (_fmt3 === 'csv') {
-    XLSX.writeFile(wb, `PLU_Profit_Analysis_${datePart}.csv`, { bookType: 'csv' });
-  } else {
-    XLSX.writeFile(wb, `PLU_Profit_Analysis_${datePart}.xlsx`);
-  }
+  const period = periodMonthly(from, to);
+  const fmtType = document.querySelector('input[name="fmt-step3"]:checked')?.value || 'xlsx';
+  exportPnlFiles(s3.data, s3.unsold, period, fmtType, 'Reprice');
 }
 
 // =====================================================================
@@ -2041,15 +3003,14 @@ function exportStep3() {
 // =====================================================================
 function clearStep3() {
   s3.skuFile = null; s3.salesFile = null; s3.data = []; s3.unsold = [];
-  s3.sortCol3a = 'plu'; s3.sortAsc3a = true;
-  s3.sortCol3b = 'plu'; s3.sortAsc3b = true;
+  pnl3.data = []; pnl3.unsold = []; dqData[3] = [];
   renderS3FileTag('a'); renderS3FileTag('b');
-  document.getElementById('tbody3a').innerHTML = '';
-  document.getElementById('tfoot3a').innerHTML = '';
-  document.getElementById('tbody3b').innerHTML = '';
-  document.getElementById('tfoot3b').innerHTML = '';
+  ['tbody-3p','tfoot-3p','tbody-3d','tfoot-3d','tbody-3n','tfoot-3n'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = '';
+  });
   document.getElementById('stats3').style.display = 'none';
   document.getElementById('preview-tabs3').style.display = 'none';
+  hide('dq3');
   document.getElementById('date-from3').value = '';
   document.getElementById('date-to3').value   = '';
   hide('progress3');
@@ -2118,11 +3079,10 @@ async function loadS4File(f) {
   s4.file = { name: f.name };
 
   try {
-    const wb   = XLSX.read(buffer, { type: 'array' });
-    // Prefer "Sales & COGS" sheet, fall back to first sheet
-    const sheetName = wb.SheetNames.find(n => /sales.*cogs|cogs.*sales/i.test(n)) || wb.SheetNames[0];
-    const ws   = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    const sheets = readAllSheets(buffer, f.name);
+    // Prefer the P&L / Sales sheet, fall back to first sheet
+    const sel  = sheets.find(sh => /p&l|sku list|sales.*cogs|cogs.*sales/i.test(sh.name)) || sheets[0];
+    const rows = sel ? sel.rows : [];
     if (rows.length < 2) throw new Error('File appears empty.');
 
     const h   = rows[0].map(v => String(v).trim().toLowerCase());
@@ -2131,7 +3091,7 @@ async function loadS4File(f) {
     const iPlu   = col(['plu']);
     const iDesc  = col(['desc']);
     const iQty   = col(['total qty','qty']);
-    const iAmt   = col(['total amount','total amt','amt','amount']);
+    const iAmt   = col(['total amount','total amt','revenue','amt','amount']);
     const iCost  = col(['unit cost','unit_cost']);
     const iCogs  = col(['cogs']);
     const iProf  = col(['profit']);
@@ -2780,6 +3740,7 @@ const sClean = {
   document.getElementById('btn-exportClean').addEventListener('click',  exportStepClean);
   document.getElementById('btn-clearClean').addEventListener('click',   clearStepClean);
   document.getElementById('search-inputClean').addEventListener('input', renderCleanTable);
+  document.getElementById('date-clean').value = todayISO(); // default list version date = today
 
   document.querySelectorAll('thead th[data-page="C"]').forEach(th => {
     th.addEventListener('click', () => {
@@ -2866,9 +3827,7 @@ async function processStepClean() {
   setCleanProgress(20, 'Reading file…');
 
   try {
-    const wb   = XLSX.read(sClean.file.buffer, { type: 'array' });
-    const ws   = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    const rows = readSheetRows(sClean.file.buffer, sClean.file.name);
 
     if (rows.length < 2) throw new Error('File appears empty.');
 
@@ -2991,11 +3950,11 @@ function exportStepClean() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Clean SKU List');
 
-  const date = new Date().toISOString().slice(0, 10);
+  const listDate = document.getElementById('date-clean').value || todayISO();
   if (fmt_sel === 'csv') {
-    XLSX.writeFile(wb, `SKU_Clean_List_${date}.csv`, { bookType: 'csv' });
+    XLSX.writeFile(wb, `${listDate} SKU-List.csv`, { bookType: 'csv' });
   } else {
-    XLSX.writeFile(wb, `SKU_Clean_List_${date}.xlsx`);
+    XLSX.writeFile(wb, `${listDate} SKU-List.xlsx`);
   }
 }
 
