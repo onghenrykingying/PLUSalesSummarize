@@ -651,7 +651,7 @@
 
   <div class="page-title">
     <h2>Step 1 — SKU Cleaner</h2>
-    <p>Upload your raw POS master list (CSV or Excel). The tool extracts only the 8 essential columns and exports a clean, ready-to-use SKU file.</p>
+    <p>Upload your raw POS master list (CSV or Excel). The tool extracts only the 10 essential columns and exports a clean, ready-to-use SKU file.</p>
   </div>
 
   <!-- Upload zone -->
@@ -727,6 +727,8 @@
             <th data-page="C" data-col="sell_price">sell_price <span class="sort-icon">↕</span></th>
             <th data-page="C" data-col="dept_code">dept_code <span class="sort-icon">↕</span></th>
             <th data-page="C" data-col="dept_desc">dept_desc <span class="sort-icon">↕</span></th>
+            <th data-page="C" data-col="cat_code">cat_code <span class="sort-icon">↕</span></th>
+            <th data-page="C" data-col="cat_desc">cat_desc <span class="sort-icon">↕</span></th>
             <th data-page="C" data-col="sup_code">sup_code <span class="sort-icon">↕</span></th>
             <th data-page="C" data-col="sup_desc">sup_desc <span class="sort-icon">↕</span></th>
           </tr>
@@ -1779,6 +1781,8 @@ async function processMonthlyPnl() {
           const iSupD = find([inc('supplier'), incAll('sup','desc')]);
           const iDptC = find([incAll('dept','code')]);
           const iDptD = find([inc('department'), incAll('dept','desc')]);
+          const iCatC = find([incAll('cat','code')]);
+          const iCatD = find([inc('category'), incAll('cat','desc')]);
           const iCost = find([incAll('unit','cost'), inc('unit cost')]);
           const iSell = find([incAll('sell','price'), inc('sell price')]);
           const iUom  = find([eq('uom'), inc('uom')]);
@@ -1794,6 +1798,8 @@ async function processMonthlyPnl() {
               sup_desc:   iSupD !== -1 ? String(rows[r][iSupD] ?? '').trim() : '',
               dept_code:  iDptC !== -1 ? String(rows[r][iDptC] ?? '').trim() : '',
               dept_desc:  iDptD !== -1 ? String(rows[r][iDptD] ?? '').trim() : '',
+              cat_code:   iCatC !== -1 ? String(rows[r][iCatC] ?? '').trim() : '',
+              cat_desc:   iCatD !== -1 ? String(rows[r][iCatD] ?? '').trim() : '',
               unit_cost:  iCost !== -1 ? parseNum(rows[r][iCost]) : null,
               sell_price: iSell !== -1 ? parseNum(rows[r][iSell]) : null,
               uom_code:   iUom  !== -1 ? String(rows[r][iUom] ?? '').trim() : '',
@@ -1806,6 +1812,8 @@ async function processMonthlyPnl() {
         // P&L data sheet: accumulate per-SKU money + qty
         const iDesc = find([inc('desc')]);
         const iDptD = find([inc('department'), incAll('dept','desc')]);
+        const iCatC = find([incAll('cat','code')]);
+        const iCatD = find([inc('category'), incAll('cat','desc')]);
         const iSupD = find([inc('supplier'), incAll('sup','desc')]);
         const iCost = find([incAll('unit','cost'), inc('unit cost')]);
         const iSell = find([incNot('sell','realized'), incAll('sell','price')]);
@@ -1828,7 +1836,7 @@ async function processMonthlyPnl() {
           const usell = iSell !== -1 ? parseNum(rows[r][iSell]) : null;
           let e = agg.get(code);
           if (!e) {
-            e = { plu: code, desc: '', dept_desc: '', sup_desc: '',
+            e = { plu: code, desc: '', dept_desc: '', cat_code: '', cat_desc: '', sup_desc: '',
                   unit_cost: null, sell_price: null, costs: new Set(), prices: new Set(),
                   qty: 0, cogs: 0, list_revenue: 0, list_profit: 0, amt: 0, profit: 0 };
             agg.set(code, e);
@@ -1840,6 +1848,8 @@ async function processMonthlyPnl() {
           if (usell !== null && usell > 0) e.prices.add(usell.toFixed(4));
           if (!e.desc && iDesc !== -1) e.desc = String(rows[r][iDesc] ?? '').trim();
           if (!e.dept_desc && iDptD !== -1) e.dept_desc = String(rows[r][iDptD] ?? '').trim();
+          if (!e.cat_code && iCatC !== -1) e.cat_code = String(rows[r][iCatC] ?? '').trim();
+          if (!e.cat_desc && iCatD !== -1) e.cat_desc = String(rows[r][iCatD] ?? '').trim();
           if (!e.sup_desc && iSupD !== -1) e.sup_desc = String(rows[r][iSupD] ?? '').trim();
           if (e.unit_cost === null && ucost !== null) e.unit_cost = ucost;
           if (e.sell_price === null && usell !== null) e.sell_price = usell;
@@ -1866,6 +1876,7 @@ async function processMonthlyPnl() {
         avg_price: e.qty ? e.amt / e.qty : null,
         profit: e.profit, variance: e.amt - e.list_revenue, price_dev: null, noPrice: false,
         sup_code: '', sup_desc: special.desc, dept_code: '', dept_desc: 'Discounts',
+        cat_code: '', cat_desc: '',
         whole_code: '', uom_code: '', wholeprice: null,
         matched: true, isDiscount: true,
       };
@@ -1886,6 +1897,7 @@ async function processMonthlyPnl() {
       price_dev: (sell !== null && e.qty) ? (e.amt / e.qty - sell) : null,
       noPrice,
       sup_code: '', sup_desc: e.sup_desc, dept_code: '', dept_desc: e.dept_desc,
+      cat_code: e.cat_code, cat_desc: e.cat_desc,
       whole_code: '', uom_code: '', wholeprice: null,
       matched: true,
     };
@@ -2246,6 +2258,8 @@ function parseSkuMaster(buffer, fileName) {
   const iSupD  = findCol('sup_desc', 'supplier');
   const iDept  = findCol('dept_code', 'department_code');
   const iDeptD = findCol('dept_desc', 'department');
+  const iCat   = findCol('cat_code', 'category_code');
+  const iCatD  = findCol('cat_desc', 'category_desc', 'category');
   const iWhole = findCol('whole_code');
   const iUom   = findCol('uom_code', 'uom');
   const iWP    = findCol('wholeprice', 'whole_price');
@@ -2263,6 +2277,8 @@ function parseSkuMaster(buffer, fileName) {
       sup_desc:   iSupD  !== -1 ? String(row[iSupD]  ?? '').trim() : '',
       dept_code:  iDept  !== -1 ? String(row[iDept]  ?? '').trim() : '',
       dept_desc:  iDeptD !== -1 ? String(row[iDeptD] ?? '').trim() : '',
+      cat_code:   iCat   !== -1 ? String(row[iCat]   ?? '').trim() : '',
+      cat_desc:   iCatD  !== -1 ? String(row[iCatD]  ?? '').trim() : '',
       whole_code: iWhole !== -1 ? String(row[iWhole] ?? '').trim() : '',
       uom_code:   iUom   !== -1 ? String(row[iUom]   ?? '').trim() : '',
       wholeprice: iWP    !== -1 ? parseNum(row[iWP])   : null,
@@ -2302,6 +2318,7 @@ function makeDiscountRow(s, special) {
     profit: s.amt,
     variance: 0, price_dev: null, noPrice: false,
     sup_code: '', sup_desc: special.desc, dept_code: '', dept_desc: 'Discounts',
+    cat_code: '', cat_desc: '',
     whole_code: '', uom_code: '', wholeprice: null,
     matched: true, matchType: 'special', isDiscount: true,
   };
@@ -2346,6 +2363,8 @@ function buildPnlData(salesRows, skuMap, skuLookup) {
       sup_desc:   sku ? sku.sup_desc   : '',
       dept_code:  sku ? sku.dept_code  : '',
       dept_desc:  sku ? sku.dept_desc  : '',
+      cat_code:   sku ? sku.cat_code   : '',
+      cat_desc:   sku ? sku.cat_desc   : '',
       whole_code: sku ? sku.whole_code : '',
       uom_code:   sku ? sku.uom_code   : '',
       wholeprice: sku ? sku.wholeprice : null,
@@ -2370,6 +2389,8 @@ function buildPnlData(salesRows, skuMap, skuLookup) {
         sup_desc:   entry.sup_desc,
         dept_code:  entry.dept_code,
         dept_desc:  entry.dept_desc,
+        cat_code:   entry.cat_code,
+        cat_desc:   entry.cat_desc,
         unit_cost:  entry.unit_cost,
         sell_price: entry.sell_price,
         uom_code:   entry.uom_code,
@@ -2874,6 +2895,8 @@ function exportPnlFiles(data, unsold, period, fmtType, label) {
     'Description':      r.desc,
     'ABC':             r.abc ?? '',
     'Department':       r.dept_desc,
+    'cat_code':         r.cat_code ?? '',
+    'cat_desc':         r.cat_desc ?? '',
     'Supplier':         r.sup_desc,
     'Total Qty':        r.qty,
     'Unit Cost':        r.unit_cost ?? '',
@@ -2890,7 +2913,7 @@ function exportPnlFiles(data, unsold, period, fmtType, label) {
     'Price Missing':    r.noPrice ? 'YES' : '',
   }));
   const wsP = XLSX.utils.json_to_sheet(primRows);
-  wsP['!cols'] = [{wch:20},{wch:40},{wch:6},{wch:20},{wch:30},{wch:11},{wch:11},{wch:11},{wch:13},{wch:14},{wch:14},{wch:11},{wch:13},{wch:16},{wch:16},{wch:16},{wch:13}];
+  wsP['!cols'] = [{wch:20},{wch:40},{wch:6},{wch:20},{wch:11},{wch:22},{wch:30},{wch:11},{wch:11},{wch:11},{wch:13},{wch:14},{wch:14},{wch:11},{wch:13},{wch:16},{wch:16},{wch:16},{wch:13}];
   XLSX.utils.book_append_sheet(wb1, wsP, 'P&L (SKU List Price)');
 
   // --- Page 2: Realized price & deviation (SECONDARY) ---
@@ -2969,6 +2992,8 @@ function exportPnlFiles(data, unsold, period, fmtType, label) {
         'Supplier':    r.sup_desc,
         'Dept Code':   r.dept_code,
         'Department':  r.dept_desc,
+        'cat_code':    r.cat_code ?? '',
+        'cat_desc':    r.cat_desc ?? '',
         'Unit Cost':   r.unit_cost  ?? '',
         'Sell Price':  r.sell_price ?? '',
         'UOM':         r.uom_code,
@@ -2976,7 +3001,7 @@ function exportPnlFiles(data, unsold, period, fmtType, label) {
       }))
     : [{ 'PLU Code': '', 'Description': 'No non-moving SKUs — every item in the SKU list had sales.' }];
   const wsU = XLSX.utils.json_to_sheet(unsoldRows);
-  wsU['!cols'] = [{wch:20},{wch:48},{wch:12},{wch:30},{wch:11},{wch:20},{wch:11},{wch:12},{wch:8},{wch:13}];
+  wsU['!cols'] = [{wch:20},{wch:48},{wch:12},{wch:30},{wch:11},{wch:20},{wch:11},{wch:22},{wch:11},{wch:12},{wch:8},{wch:13}];
   XLSX.utils.book_append_sheet(wb2, wsU, 'Non-Moving SKUs');
 
   // ===================== DOWNLOAD BOTH =====================
@@ -3711,7 +3736,7 @@ function pdfKpiCard(doc, x, y, w, h, card, PC) {
 //  STEP 1 — SKU CLEANER
 // =====================================================================
 
-const CLEAN_COLS = ['prod_code','prod_desc1','unit_cost','sell_price','dept_code','dept_desc','sup_code','sup_desc'];
+const CLEAN_COLS = ['prod_code','prod_desc1','unit_cost','sell_price','dept_code','dept_desc','cat_code','cat_desc','sup_code','sup_desc'];
 
 const sClean = {
   file:    null,
@@ -3799,6 +3824,8 @@ function detectCleanCols(headers) {
     sell_price: find(['sell_price', 'selling_price', 'price', 'retail_price']),
     dept_code:  find(['dept_code', 'department_code', 'dept']),
     dept_desc:  find(['dept_desc', 'department_desc', 'department']),
+    cat_code:   find(['cat_code', 'category_code']),
+    cat_desc:   find(['cat_desc', 'category_desc', 'category']),
     sup_code:   find(['sup_code', 'supplier_code', 'vendor_code']),
     sup_desc:   find(['sup_desc', 'supplier_desc', 'supplier', 'vendor']),
   };
@@ -3853,6 +3880,8 @@ async function processStepClean() {
         sell_price: colIdx.sell_price !== -1 ? parseNum(row[colIdx.sell_price]) : null,
         dept_code:  colIdx.dept_code  !== -1 ? String(row[colIdx.dept_code]  ?? '').trim() : '',
         dept_desc:  colIdx.dept_desc  !== -1 ? String(row[colIdx.dept_desc]  ?? '').trim() : '',
+        cat_code:   colIdx.cat_code   !== -1 ? String(row[colIdx.cat_code]   ?? '').trim() : '',
+        cat_desc:   colIdx.cat_desc   !== -1 ? String(row[colIdx.cat_desc]   ?? '').trim() : '',
         sup_code:   colIdx.sup_code   !== -1 ? String(row[colIdx.sup_code]   ?? '').trim() : '',
         sup_desc:   colIdx.sup_desc   !== -1 ? String(row[colIdx.sup_desc]   ?? '').trim() : '',
       });
@@ -3896,6 +3925,7 @@ function renderCleanTable() {
         r.prod_code.toLowerCase().includes(query) ||
         r.prod_desc1.toLowerCase().includes(query) ||
         r.dept_desc.toLowerCase().includes(query)  ||
+        r.cat_desc.toLowerCase().includes(query)   ||
         r.sup_desc.toLowerCase().includes(query))
     : [...sClean.data];
 
@@ -3914,13 +3944,15 @@ function renderCleanTable() {
       <td style="text-align:right">${r.sell_price !== null ? fmt(r.sell_price) : '—'}</td>
       <td>${escHtml(r.dept_code)}</td>
       <td>${escHtml(r.dept_desc)}</td>
+      <td>${escHtml(r.cat_code)}</td>
+      <td>${escHtml(r.cat_desc)}</td>
       <td>${escHtml(r.sup_code)}</td>
       <td>${escHtml(r.sup_desc)}</td>
     </tr>`).join('');
 
   document.getElementById('tfootClean').innerHTML = `
     <tr>
-      <td colspan="8"><strong>TOTAL${query ? ' (filtered)' : ''}: ${data.length.toLocaleString()} SKUs</strong></td>
+      <td colspan="10"><strong>TOTAL${query ? ' (filtered)' : ''}: ${data.length.toLocaleString()} SKUs</strong></td>
     </tr>`;
 
   document.getElementById('row-countClean').textContent =
@@ -3940,12 +3972,14 @@ function exportStepClean() {
     'sell_price': r.sell_price ?? '',
     'dept_code':  r.dept_code,
     'dept_desc':  r.dept_desc,
+    'cat_code':   r.cat_code,
+    'cat_desc':   r.cat_desc,
     'sup_code':   r.sup_code,
     'sup_desc':   r.sup_desc,
   }));
 
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:20},{wch:45},{wch:12},{wch:12},{wch:12},{wch:28},{wch:16},{wch:36}];
+  ws['!cols'] = [{wch:20},{wch:45},{wch:12},{wch:12},{wch:12},{wch:28},{wch:12},{wch:24},{wch:16},{wch:36}];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Clean SKU List');

@@ -1,0 +1,5 @@
+# OS noise
+.DS_Store
+
+# Local reference data — real product master list, not for the repo
+Reference/
