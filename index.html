@@ -162,10 +162,11 @@
 
     .home-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 12px;
     }
-    @media (max-width: 860px)  { .home-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 860px)  { .home-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px)  { .home-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 460px)  { .home-grid { grid-template-columns: 1fr; } }
 
     .home-card {
@@ -558,6 +559,41 @@
     .sev-blocker { background: #FEE2E2; color: #B91C1C; }
     .sev-warning { background: #FEF3C7; color: #92610A; }
     .sev-info    { background: #E0F2FE; color: #075985; }
+    /* ===================== COMBINE (STEP 1) DASHBOARD ===================== */
+    .mg-dash { display: none; margin-top: 18px; }
+    .mg-hero {
+      background: white; border-radius: 14px; border: 1.5px solid #E7E3DC;
+      border-left: 5px solid #D97706; padding: 20px 24px;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .mg-hero-label { font-size: 0.72rem; font-weight: 700; color: #78716C; text-transform: uppercase; letter-spacing: 0.6px; }
+    .mg-hero-value { font-size: 2.3rem; font-weight: 700; color: #1C1917; letter-spacing: -0.02em; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .mg-hero-sub { font-size: 0.8rem; color: #78716C; margin-top: 4px; }
+    .mg-hero-side { text-align: right; font-size: 0.8rem; color: #57534E; line-height: 1.6; }
+    .mg-hero-side strong { color: #1C1917; font-variant-numeric: tabular-nums; }
+    .mg-dash .stats { display: flex; }
+    .mg-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; margin-top: 14px; }
+    @media (max-width: 900px) { .mg-grid { grid-template-columns: 1fr; } }
+    .mg-panel { background: white; border: 1.5px solid #E7E3DC; border-radius: 12px; overflow: hidden; }
+    .mg-panel .table-header h3 { font-size: 0.86rem; }
+    .mg-panel table td, .mg-panel table th { font-variant-numeric: tabular-nums; }
+    .mg-file-table tbody td:first-child { font-family: inherit; font-size: 0.8rem; color: #1C1917; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mg-file-table tbody td:nth-child(n+3), .mg-file-table thead th:nth-child(n+3), .mg-file-table tfoot td:nth-child(n+3) { text-align: right; }
+    .mg-file-table tbody td:nth-child(3) { color: inherit; font-weight: 400; }
+    .mg-file-table tbody td:nth-child(5) { color: #D97706; font-weight: 600; }
+    .mg-file-table tbody td:nth-child(4) { color: inherit; font-weight: 400; }
+    .mg-file-table tfoot td, #tableMerge tfoot td { color: #1C1917; }
+    .mg-file-table tfoot td:nth-child(5) { color: #D97706; }
+    .mg-chart-wrap { position: relative; padding: 14px 16px; height: 300px; }
+    .mg-warn { margin-top: 10px; background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; border-radius: 8px; padding: 10px 15px; font-size: 0.8rem; white-space: pre-line; display: none; }
+    #tableMerge tbody td:nth-child(3), #tableMerge tbody td:nth-child(4), #tableMerge tbody td:nth-child(5),
+    #tableMerge thead th:nth-child(n+3), #tableMerge tfoot td:nth-child(n+3) { text-align: right; }
+    #tableMerge tbody td:nth-child(4) { color: inherit; font-weight: 400; }
+    #tableMerge tbody td:nth-child(5) { color: #D97706; font-weight: 600; }
+    #tableMerge tfoot td:nth-child(5) { color: #D97706; }
+    #tableMerge thead th { white-space: normal; }
+    .mg-src { font-size: 0.72rem; color: #A8A29E; }
   </style>
 </head>
 <body>
@@ -571,20 +607,24 @@
     <button class="step-home-btn" data-page="pageHome" title="Home">⌂</button>
     <div class="nav-sep"></div>
     <div class="steps-track">
-      <div class="step-item" data-page="pageClean">
+      <div class="step-item" data-page="pageMerge">
         <div class="step-dot">1</div>
+        <div class="step-lbl">Combine</div>
+      </div>
+      <div class="step-item" data-page="pageClean">
+        <div class="step-dot">2</div>
         <div class="step-lbl">SKU</div>
       </div>
       <div class="step-item" data-page="page1">
-        <div class="step-dot">2</div>
+        <div class="step-dot">3</div>
         <div class="step-lbl">Weekly</div>
       </div>
       <div class="step-item" data-page="page2">
-        <div class="step-dot">3</div>
+        <div class="step-dot">4</div>
         <div class="step-lbl">Monthly</div>
       </div>
       <div class="step-item" data-page="page3">
-        <div class="step-dot">4</div>
+        <div class="step-dot">5</div>
         <div class="step-lbl">Re-price</div>
       </div>
     </div>
@@ -597,15 +637,23 @@
   <div class="home-hero">
     <div class="home-hero-badge">Retail Sales Intelligence</div>
     <h1>Your complete <span>PLU sales</span><br>analysis workflow</h1>
-    <p>Process raw POS exports through a four-step pipeline — from daily sales data to a boardroom-ready PDF report, entirely in your browser.</p>
+    <p>Process raw POS exports through a six-step pipeline — from daily sales data to a boardroom-ready PDF report, entirely in your browser.</p>
   </div>
 
   <div class="home-grid">
 
+    <div class="home-card" data-page="pageMerge">
+      <div class="home-card-accent" style="background:#F59E0B;"></div>
+      <div class="home-card-body">
+        <div class="home-card-step" style="color:#D97706;">Step 1</div>
+        <div class="home-card-title">Combine Sales Files</div>
+      </div>
+    </div>
+
     <div class="home-card" data-page="pageClean">
       <div class="home-card-accent" style="background:#D97706;"></div>
       <div class="home-card-body">
-        <div class="home-card-step" style="color:#D97706;">Step 1</div>
+        <div class="home-card-step" style="color:#D97706;">Step 2</div>
         <div class="home-card-title">SKU Cleaner</div>
       </div>
     </div>
@@ -613,7 +661,7 @@
     <div class="home-card" data-page="page1">
       <div class="home-card-accent" style="background:#B45309;"></div>
       <div class="home-card-body">
-        <div class="home-card-step" style="color:#B45309;">Step 2</div>
+        <div class="home-card-step" style="color:#B45309;">Step 3</div>
         <div class="home-card-title">Weekly Summary</div>
       </div>
     </div>
@@ -621,7 +669,7 @@
     <div class="home-card" data-page="page2">
       <div class="home-card-accent" style="background:#92400E;"></div>
       <div class="home-card-body">
-        <div class="home-card-step" style="color:#92400E;">Step 3</div>
+        <div class="home-card-step" style="color:#92400E;">Step 4</div>
         <div class="home-card-title">Monthly Summary</div>
       </div>
     </div>
@@ -629,7 +677,7 @@
     <div class="home-card" data-page="page3">
       <div class="home-card-accent" style="background:#78350F;"></div>
       <div class="home-card-body">
-        <div class="home-card-step" style="color:#78350F;">Step 4</div>
+        <div class="home-card-step" style="color:#78350F;">Step 5</div>
         <div class="home-card-title">Re-price P&amp;L</div>
       </div>
     </div>
@@ -637,7 +685,7 @@
     <div class="home-card" data-page="pageAIBrief">
       <div class="home-card-accent" style="background:#7C3AED;"></div>
       <div class="home-card-body">
-        <div class="home-card-step" style="color:#7C3AED;">Step 5</div>
+        <div class="home-card-step" style="color:#7C3AED;">Step 6</div>
         <div class="home-card-title">AI Brief</div>
       </div>
     </div>
@@ -646,11 +694,103 @@
 
 </div><!-- /pageHome -->
 
+<!-- ==================== PAGE MERGE : COMBINE SALES FILES (STEP 1) ==================== -->
+<div class="page" id="pageMerge">
+
+  <div class="page-title">
+    <h2>Step 1 — Combine Sales Files</h2>
+    <p>Upload several POS "Sales by PLU Code" exports (same layout as the reference file: PLU Code · Description · On-hand · Total Qty · Total Amt). Only the first file's header is kept, and the data rows from every file are added underneath it in a single combined list.</p>
+  </div>
+
+  <div class="upload-zone" id="dropMerge">
+    <input type="file" id="file-inputMerge" accept=".csv,.xls,.xlsx" multiple />
+    <h3>Drop your POS sales exports here, or click to browse</h3>
+    <p>Supports .xls, .xlsx and .csv &nbsp;|&nbsp; Multiple files allowed</p>
+  </div>
+
+  <div class="file-list" id="file-listMerge"></div>
+  <div class="error-box" id="errorMerge"></div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btn-processMerge" disabled>Combine &amp; Summarize</button>
+    <div class="format-toggle">
+      <input type="radio" name="fmt-merge" id="fmt-merge-xlsx" value="xlsx" checked />
+      <label for="fmt-merge-xlsx">Excel</label>
+      <input type="radio" name="fmt-merge" id="fmt-merge-csv" value="csv" />
+      <label for="fmt-merge-csv">CSV</label>
+    </div>
+    <button class="btn btn-success" id="btn-exportMerge" disabled>Export Combined File</button>
+    <button class="btn btn-danger"  id="btn-clearMerge" disabled>Clear All</button>
+  </div>
+
+  <div class="progress-wrap" id="progressMerge">
+    <div class="progress-label" id="progress-lblMerge">Processing…</div>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-barMerge"></div></div>
+  </div>
+
+  <div class="mg-warn" id="warnMerge"></div>
+
+  <!-- Dashboard -->
+  <div class="mg-dash" id="dashMerge">
+    <div class="mg-hero">
+      <div>
+        <div class="mg-hero-label">Total Amt · all files</div>
+        <div class="mg-hero-value" id="mg-total">0.00</div>
+        <div class="mg-hero-sub" id="mg-range"></div>
+      </div>
+      <div class="mg-hero-side" id="mg-side"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card"><label>Files Combined</label><span id="mg-files">0</span></div>
+      <div class="stat-card green"><label>Data Rows</label><span id="mg-rows">0</span></div>
+      <div class="stat-card orange"><label>Total Qty</label><span id="mg-qty">0</span></div>
+      <div class="stat-card"><label>Discounts (DISC)</label><span id="mg-disc">0.00</span></div>
+    </div>
+
+    <div class="mg-grid">
+      <div class="mg-panel">
+        <div class="table-header"><h3>Breakdown by file</h3><span class="row-count" id="mg-file-count"></span></div>
+        <div class="table-scroll" style="max-height:330px;">
+          <table class="mg-file-table">
+            <thead><tr><th>File</th><th>Date Range</th><th>Rows</th><th>Total Qty</th><th>Total Amt</th><th>Share</th></tr></thead>
+            <tbody id="mg-file-body"></tbody>
+            <tfoot id="mg-file-foot"></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="mg-panel">
+        <div class="table-header"><h3>Total Amt by file</h3><span class="row-count"></span></div>
+        <div class="mg-chart-wrap"><canvas id="mg-chart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="search-bar" style="display:block;">
+      <input type="text" id="search-inputMerge" placeholder="Search by PLU Code or Description…" />
+    </div>
+
+    <div class="table-wrap" style="display:block;">
+      <div class="table-header">
+        <h3>Combined rows <span class="mg-src">(first file's header · rows from every file, in date order)</span></h3>
+        <span class="row-count" id="row-countMerge"></span>
+      </div>
+      <div class="table-scroll">
+        <table id="tableMerge">
+          <thead id="theadMerge"></thead>
+          <tbody id="tbodyMerge"></tbody>
+          <tfoot id="tfootMerge"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /pageMerge -->
+
 <!-- ==================== PAGE CLEAN : SKU CLEANER (STEP 1) ==================== -->
 <div class="page" id="pageClean">
 
   <div class="page-title">
-    <h2>Step 1 — SKU Cleaner</h2>
+    <h2>Step 2 — SKU Cleaner</h2>
     <p>Upload your raw POS master list (CSV or Excel). The tool extracts only the 10 essential columns and exports a clean, ready-to-use SKU file.</p>
   </div>
 
@@ -745,7 +885,7 @@
 <div class="page active" id="page1">
 
   <div class="page-title">
-    <h2>Step 2 — Weekly Summary</h2>
+    <h2>Step 3 — Weekly Summary</h2>
     <p>Upload your raw daily/weekly sales reports <strong>and the SKU data list</strong> for this week. Sales are aggregated and priced from the SKU list to produce a full P&amp;L.</p>
   </div>
 
@@ -955,7 +1095,7 @@
 <div class="page" id="page2">
 
   <div class="page-title">
-    <h2>Step 3 — Monthly Summary</h2>
+    <h2>Step 4 — Monthly Summary</h2>
     <p>Upload the weekly <strong>P&amp;L Analysis</strong> files exported from the Weekly step. All weeks are aggregated into one monthly P&amp;L (no SKU list needed).</p>
   </div>
 
@@ -1148,8 +1288,8 @@
 <div class="page" id="page3">
 
   <div class="page-title">
-    <h2>Step 4 — Re-price P&amp;L <span style="font-weight:400;color:#78716C;font-size:0.9rem;">optional</span></h2>
-    <p>Apply an <strong>updated SKU list</strong> to a month's sales to recompute the P&amp;L at new prices — a "what-if" on top of Step 3. The <em>Realized &amp; Deviation</em> tab then shows how the new prices compare to what actually sold. (Step 3 already gives you the month's P&amp;L at the original prices; use this only when prices changed or you want to test new ones.)</p>
+    <h2>Step 5 — Re-price P&amp;L <span style="font-weight:400;color:#78716C;font-size:0.9rem;">optional</span></h2>
+    <p>Apply an <strong>updated SKU list</strong> to a month's sales to recompute the P&amp;L at new prices — a "what-if" on top of Step 4. The <em>Realized &amp; Deviation</em> tab then shows how the new prices compare to what actually sold. (Step 4 already gives you the month's P&amp;L at the original prices; use this only when prices changed or you want to test new ones.)</p>
   </div>
 
   <!-- Two upload panels side by side -->
@@ -1157,7 +1297,7 @@
 
     <!-- Panel B: Month's Sales (left) -->
     <div class="upload-panel">
-      <h4>Month's Sales <span style="font-weight:400;color:#78716C;font-size:0.78rem;">Step 3 Monthly P&amp;L, or any monthly summary (.csv/.xls/.xlsx)</span></h4>
+      <h4>Month's Sales <span style="font-weight:400;color:#78716C;font-size:0.78rem;">Step 4 Monthly P&amp;L, or any monthly summary (.csv/.xls/.xlsx)</span></h4>
       <div class="upload-zone" id="drop3b">
         <input type="file" id="file-input3b" accept=".csv,.xls,.xlsx" />
 
@@ -1342,8 +1482,8 @@
 <div class="page" id="page4">
 
   <div class="page-title">
-    <h2>Step 5 — PDF Performance Report</h2>
-    <p>Generate a comprehensive store performance report with charts, department breakdowns, supplier analysis, and AI-style insights — all from your Step 4 data.</p>
+    <h2>Step 6 — PDF Performance Report</h2>
+    <p>Generate a comprehensive store performance report with charts, department breakdowns, supplier analysis, and AI-style insights — all from your Step 5 data.</p>
   </div>
 
   <!-- Upload zone -->
@@ -1351,7 +1491,7 @@
     <input type="file" id="file-input4" accept=".csv,.xls,.xlsx" />
     
     <h3>Drop your exported P&amp;L report here, or click to browse</h3>
-    <p>Upload the file exported from Step 4 &nbsp;|&nbsp; .csv, .xls or .xlsx</p>
+    <p>Upload the file exported from Step 5 &nbsp;|&nbsp; .csv, .xls or .xlsx</p>
   </div>
   <div class="file-list" id="file-list4"></div>
 
@@ -3200,7 +3340,7 @@ function updateReportStatus() {
       <div class="report-status-card ready" style="border-color:#4E6E58;background:#eef4f0;">
         
         <div class="status-text">
-          <strong>Using live Step 3 data — ${s3.data.length.toLocaleString()} SKUs</strong>
+          <strong>Using live Step 4 data — ${s3.data.length.toLocaleString()} SKUs</strong>
           <span>Revenue: ${rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} &nbsp;|&nbsp; Upload a file above to override, or click Generate to use this data.</span>
         </div>
       </div>`;
@@ -3210,7 +3350,7 @@ function updateReportStatus() {
         
         <div class="status-text">
           <strong>No data loaded yet</strong>
-          <span>Upload your exported Step 3 Excel file above, or complete Step 3 first to use live data.</span>
+          <span>Upload your exported Step 4 Excel file above, or complete Step 4 first to use live data.</span>
         </div>
       </div>`;
   }
@@ -3280,7 +3420,7 @@ function ps(str) {
 async function generatePDFReport() {
   // Use uploaded file data first, fall back to live Step 3 data
   const data4 = (s4.data && s4.data.length > 0) ? s4.data : s3.data;
-  if (!data4 || !data4.length) { showError(4, 'No data. Upload a file or complete Step 3 first.'); return; }
+  if (!data4 || !data4.length) { showError(4, 'No data. Upload a file or complete Step 4 first.'); return; }
 
   const btn = document.getElementById('btn-gen-pdf');
   const genDiv = document.getElementById('pdf-generating');
@@ -3733,6 +3873,302 @@ function pdfKpiCard(doc, x, y, w, h, card, PC) {
 }
 
 // =====================================================================
+//  STEP 1 — COMBINE SALES FILES
+//  Stacks several POS "Sales by PLU Code" exports (PLU Code · Description ·
+//  On-hand · Total Qty · Total Amt) into one list: the first file's header is
+//  kept, every file's data rows are appended below it, and Total Amt is summed.
+// =====================================================================
+const sMerge = { files: [], header: null, cols: null, rows: [], fileStats: [], chart: null };
+const MERGE_VIEW_LIMIT = 1000; // rows drawn in the browser preview (export always has all)
+
+(function initStepMerge() {
+  const drop  = document.getElementById('dropMerge');
+  const input = document.getElementById('file-inputMerge');
+  drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag-over');
+    addMergeFiles([...e.dataTransfer.files]);
+  });
+  input.addEventListener('change', () => {
+    addMergeFiles([...input.files]);
+    input.value = '';
+  });
+  document.getElementById('btn-processMerge').addEventListener('click', processMerge);
+  document.getElementById('btn-exportMerge').addEventListener('click',  exportMerge);
+  document.getElementById('btn-clearMerge').addEventListener('click',   clearMerge);
+  document.getElementById('search-inputMerge').addEventListener('input', renderMergeTable);
+})();
+
+async function addMergeFiles(list) {
+  const skipped = [];
+  for (const f of list) {
+    if (!f.name.match(/\.(csv|xls|xlsx)$/i)) { skipped.push(`Skipped "${f.name}" — only .xls/.xlsx/.csv accepted.`); continue; }
+    if (sMerge.files.find(x => x.name === f.name)) continue;
+    sMerge.files.push({ name: f.name, buffer: await f.arrayBuffer() });
+  }
+  if (skipped.length) showErrorMerge(skipped.join('\n')); else hideErrorMerge();
+  renderMergeFileList();
+  syncMergeButtons();
+}
+
+function renderMergeFileList() {
+  const el = document.getElementById('file-listMerge');
+  el.innerHTML = '';
+  for (const f of sMerge.files) {
+    const tag = document.createElement('div');
+    tag.className = 'file-tag';
+    tag.innerHTML = `${escHtml(f.name)} <button class="remove-btn" title="Remove">×</button>`;
+    tag.querySelector('.remove-btn').addEventListener('click', () => {
+      sMerge.files = sMerge.files.filter(x => x.name !== f.name);
+      renderMergeFileList();
+      syncMergeButtons();
+    });
+    el.appendChild(tag);
+  }
+}
+
+function syncMergeButtons() {
+  document.getElementById('btn-processMerge').disabled = !sMerge.files.length;
+  document.getElementById('btn-exportMerge').disabled  = !sMerge.rows.length;
+  document.getElementById('btn-clearMerge').disabled   = !sMerge.files.length && !sMerge.rows.length;
+}
+
+// A header row has at least a PLU column and an amount column.
+function isMergeHeader(row) {
+  const c = detectColumns(row || []);
+  return c.pluIdx >= 0 && c.amtIdx >= 0;
+}
+// Column-layout fingerprint. The Description header also carries the store name
+// and date range, so only its first word is compared.
+function mergeSignature(header) {
+  return header.map(v => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ').split(' ')[0]).join('|');
+}
+// "Date Range: 06/29/2026 To 06/30/2026" (MM/DD/YYYY) -> { from, to } as ISO dates.
+function parseDateRange(text) {
+  const m = String(text).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*to\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+  if (!m) return null;
+  const iso = (mo, d, y) => `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  return { from: iso(m[1], m[2], m[3]), to: iso(m[4], m[5], m[6]) };
+}
+function fmtRange(r) {
+  if (!r) return '—';
+  return r.from === r.to ? r.from : `${r.from} → ${r.to}`;
+}
+
+async function processMerge() {
+  hideErrorMerge();
+  hide('warnMerge');
+  hide('dashMerge');
+  showBlock('progressMerge');
+  document.getElementById('btn-processMerge').disabled = true;
+  document.getElementById('btn-exportMerge').disabled  = true;
+
+  const parsed = [], errors = [];
+  for (let i = 0; i < sMerge.files.length; i++) {
+    const f = sMerge.files[i];
+    setMergeProgress((i / sMerge.files.length) * 90, `Reading ${f.name}… (${i + 1}/${sMerge.files.length})`);
+    await new Promise(r => setTimeout(r, 0)); // let the progress bar paint
+    try {
+      const rows = readSheetRows(f.buffer, f.name);
+      const hIdx = rows.slice(0, 10).findIndex(isMergeHeader);
+      if (hIdx < 0) { errors.push(`"${f.name}" — no "PLU Code … Total Amt" header row found; skipped.`); continue; }
+      const header = rows[hIdx];
+      const data = [];
+      for (const r of rows.slice(hIdx + 1)) {
+        if (!r.some(v => String(v ?? '').trim() !== '')) continue; // blank line
+        if (isMergeHeader(r)) continue;                             // header repeated mid-sheet
+        const v = r.slice(0, header.length);
+        while (v.length < header.length) v.push('');
+        data.push(v);
+      }
+      parsed.push({ name: f.name, header, sig: mergeSignature(header), range: parseDateRange(header.join(' ')), data });
+    } catch (e) {
+      errors.push(`"${f.name}" — could not be read (${e.message}); skipped.`);
+    }
+  }
+
+  // Oldest date range first; files without a date range keep upload order at the end.
+  parsed.sort((a, b) => (a.range ? a.range.from : '￿').localeCompare(b.range ? b.range.from : '￿'));
+
+  const base = parsed[0];
+  const used = [];
+  for (const p of parsed) {
+    if (p.sig === base.sig) used.push(p);
+    else errors.push(`"${p.name}" — column layout differs from "${base.name}"; skipped.`);
+  }
+
+  sMerge.rows = []; sMerge.fileStats = [];
+  if (base) {
+    sMerge.header = base.header;
+    sMerge.cols   = detectColumns(base.header);
+    const { pluIdx, qtyIdx, amtIdx } = sMerge.cols;
+    used.forEach((p, fi) => {
+      let qty = 0, amt = 0, disc = 0;
+      for (const v of p.data) {
+        const a = parseNum(v[amtIdx]);
+        amt += a;
+        if (qtyIdx >= 0) qty += parseNum(v[qtyIdx]);
+        if (specialCode(v[pluIdx])) disc += a;
+        sMerge.rows.push({ v, f: fi });
+      }
+      sMerge.fileStats.push({ name: p.name, range: p.range, rows: p.data.length, qty, amt, disc });
+    });
+  }
+
+  setMergeProgress(100, 'Done');
+  setTimeout(() => hide('progressMerge'), 400);
+  if (errors.length) showErrorMerge(errors.join('\n'));
+
+  // Warn when two files cover the same dates (likely the same export uploaded twice).
+  const seen = new Map(), dupes = [];
+  for (const fs of sMerge.fileStats) {
+    if (!fs.range) continue;
+    const k = fs.range.from + '|' + fs.range.to;
+    if (seen.has(k)) dupes.push(`"${fs.name}" covers the same dates as "${seen.get(k)}" (${fmtRange(fs.range)}) — check it isn't a duplicate.`);
+    else seen.set(k, fs.name);
+  }
+  const warn = document.getElementById('warnMerge');
+  warn.textContent = dupes.join('\n');
+  if (dupes.length) showBlock('warnMerge');
+
+  syncMergeButtons();
+  if (!sMerge.rows.length) return;
+  showBlock('dashMerge');
+  renderMergeDashboard();
+  renderMergeTable();
+}
+
+function renderMergeDashboard() {
+  const st = sMerge.fileStats;
+  const total = st.reduce((s, f) => s + f.amt, 0);
+  const qty   = st.reduce((s, f) => s + f.qty, 0);
+  const disc  = st.reduce((s, f) => s + f.disc, 0);
+  const dated = st.filter(f => f.range);
+
+  document.getElementById('mg-total').textContent = fmt(total);
+  document.getElementById('mg-range').textContent = dated.length
+    ? `Sales from ${fmtRange({ from: dated.map(f => f.range.from).sort()[0], to: dated.map(f => f.range.to).sort().pop() })}`
+    : '';
+  document.getElementById('mg-side').innerHTML =
+    `Before discounts <strong>${fmt(total - disc)}</strong><br>` +
+    `Average per file <strong>${fmt(total / st.length)}</strong>`;
+  document.getElementById('mg-files').textContent = st.length.toLocaleString();
+  document.getElementById('mg-rows').textContent  = sMerge.rows.length.toLocaleString();
+  document.getElementById('mg-qty').textContent   = qty.toLocaleString();
+  document.getElementById('mg-disc').textContent  = fmt(disc);
+
+  document.getElementById('mg-file-count').textContent = `${st.length} file${st.length === 1 ? '' : 's'}`;
+  document.getElementById('mg-file-body').innerHTML = st.map(f => `<tr>
+      <td title="${escHtml(f.name)}">${escHtml(f.name)}</td>
+      <td>${escHtml(fmtRange(f.range))}</td>
+      <td>${f.rows.toLocaleString()}</td>
+      <td>${f.qty.toLocaleString()}</td>
+      <td>${fmt(f.amt)}</td>
+      <td>${total ? (f.amt / total * 100).toFixed(1) + '%' : '—'}</td>
+    </tr>`).join('');
+  document.getElementById('mg-file-foot').innerHTML = `<tr>
+      <td>Total</td><td></td>
+      <td>${sMerge.rows.length.toLocaleString()}</td>
+      <td>${qty.toLocaleString()}</td>
+      <td>${fmt(total)}</td>
+      <td>100%</td>
+    </tr>`;
+
+  if (sMerge.chart) sMerge.chart.destroy();
+  sMerge.chart = new Chart(document.getElementById('mg-chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: st.map(f => f.range ? fmtRange(f.range) : f.name),
+      datasets: [{ label: 'Total Amt', data: st.map(f => Math.round(f.amt * 100) / 100), backgroundColor: '#D97706', borderRadius: 4, maxBarThickness: 48 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { title: items => st[items[0].dataIndex].name, label: c => 'Total Amt: ' + fmt(c.raw) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#78716C', font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: '#F0EDE8' }, ticks: { color: '#78716C', font: { size: 11 }, callback: v => Number(v).toLocaleString() } },
+      },
+    },
+  });
+}
+
+function renderMergeTable() {
+  const { header, cols } = sMerge;
+  if (!header) return;
+  const { pluIdx, descIdx, qtyIdx, amtIdx } = cols;
+  const q = document.getElementById('search-inputMerge').value.trim().toLowerCase();
+  const rows = q
+    ? sMerge.rows.filter(r => String(r.v[pluIdx]).toLowerCase().includes(q) || (descIdx >= 0 && String(r.v[descIdx]).toLowerCase().includes(q)))
+    : sMerge.rows;
+
+  document.getElementById('theadMerge').innerHTML =
+    '<tr>' + header.map(h => `<th style="cursor:default;">${escHtml(h)}</th>`).join('') + '</tr>';
+
+  const cell = (v, i) => typeof v === 'number'
+    ? (i === amtIdx ? fmt(v) : v.toLocaleString())
+    : escHtml(v ?? '');
+  document.getElementById('tbodyMerge').innerHTML = rows.slice(0, MERGE_VIEW_LIMIT).map(r =>
+    `<tr title="${escHtml(sMerge.fileStats[r.f].name)}">` + r.v.map((v, i) => `<td>${cell(v, i)}</td>`).join('') + '</tr>'
+  ).join('');
+
+  const sumQty = qtyIdx >= 0 ? rows.reduce((s, r) => s + parseNum(r.v[qtyIdx]), 0) : null;
+  const sumAmt = rows.reduce((s, r) => s + parseNum(r.v[amtIdx]), 0);
+  document.getElementById('tfootMerge').innerHTML = '<tr>' + header.map((_, i) =>
+    `<td>${i === 0 ? (q ? 'Total (filtered)' : 'Total') : i === qtyIdx ? sumQty.toLocaleString() : i === amtIdx ? fmt(sumAmt) : ''}</td>`
+  ).join('') + '</tr>';
+
+  document.getElementById('row-countMerge').textContent = rows.length > MERGE_VIEW_LIMIT
+    ? `Showing first ${MERGE_VIEW_LIMIT.toLocaleString()} of ${rows.length.toLocaleString()} rows — export for the full list`
+    : `${rows.length.toLocaleString()} rows`;
+}
+
+function exportMerge() {
+  if (!sMerge.rows.length) return;
+  const aoa = [sMerge.header, ...sMerge.rows.map(r => r.v)];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = sMerge.header.map((_, i) => ({ wch: i === sMerge.cols.descIdx ? 45 : i === sMerge.cols.pluIdx ? 18 : 12 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'report');
+
+  const dated = sMerge.fileStats.filter(f => f.range);
+  const period = dated.length
+    ? periodWeekly(dated.map(f => f.range.from).sort()[0], dated.map(f => f.range.to).sort().pop())
+    : todayISO();
+  const fmtSel = document.querySelector('input[name="fmt-merge"]:checked').value;
+  if (fmtSel === 'csv') XLSX.writeFile(wb, `${period} Combined-Sales.csv`, { bookType: 'csv' });
+  else                  XLSX.writeFile(wb, `${period} Combined-Sales.xlsx`);
+}
+
+function clearMerge() {
+  sMerge.files = []; sMerge.rows = []; sMerge.fileStats = []; sMerge.header = null; sMerge.cols = null;
+  if (sMerge.chart) { sMerge.chart.destroy(); sMerge.chart = null; }
+  renderMergeFileList();
+  document.getElementById('search-inputMerge').value = '';
+  ['theadMerge', 'tbodyMerge', 'tfootMerge', 'mg-file-body', 'mg-file-foot'].forEach(id => document.getElementById(id).innerHTML = '');
+  hide('dashMerge'); hide('progressMerge'); hide('warnMerge');
+  hideErrorMerge();
+  syncMergeButtons();
+}
+
+// These panels are display:none in CSS, so show() (which clears the inline style) can't reveal them.
+function showBlock(id) { document.getElementById(id).style.display = 'block'; }
+function setMergeProgress(pct, label) {
+  document.getElementById('progress-barMerge').style.width = pct + '%';
+  document.getElementById('progress-lblMerge').textContent = label;
+}
+function showErrorMerge(msg) {
+  const el = document.getElementById('errorMerge');
+  el.style.display = 'block'; el.textContent = msg;
+}
+function hideErrorMerge() {
+  document.getElementById('errorMerge').style.display = 'none';
+}
+
+// =====================================================================
 //  STEP 1 — SKU CLEANER
 // =====================================================================
 
@@ -4037,15 +4473,15 @@ function updateAIBriefStatus() {
     const rev = data.reduce((a,r)=>a+r.amt,0);
     wrap.innerHTML = `
       <div class="brief-status ready">
-        <div><strong>Step 4 data loaded — ${data.length.toLocaleString()} SKUs</strong>
+        <div><strong>Step 5 data loaded — ${data.length.toLocaleString()} SKUs</strong>
         Revenue: ${rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} — briefs generated from your data.</div>
       </div>`;
     generateAllBriefs(data);
   } else {
     wrap.innerHTML = `
       <div class="brief-status missing">
-        <div><strong>No Step 4 data yet — showing prompt templates</strong>
-        Complete Step 4 first to auto-fill with your real numbers. You can also copy a template below and fill in your own values before pasting into AI.</div>
+        <div><strong>No Step 5 data yet — showing prompt templates</strong>
+        Complete Step 5 first to auto-fill with your real numbers. You can also copy a template below and fill in your own values before pasting into AI.</div>
       </div>`;
     generateTemplateBriefs();
   }
@@ -4428,7 +4864,7 @@ function buildInsights({data,totalRev,totalCOGS,totalProfit,grossMargin,totalQty
 <div class="page" id="pageAIBrief">
 
   <div class="page-title">
-    <h2>Step 5 — AI Brief Generator</h2>
+    <h2>Step 6 — AI Brief Generator</h2>
     <p>Generate a structured text summary of your store's performance, optimised for pasting into Claude or ChatGPT.</p>
   </div>
 
